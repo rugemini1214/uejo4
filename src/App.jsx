@@ -6,6 +6,9 @@ import {
   Wind, CloudRain, Sun, Cloud, LayoutGrid, ListFilter, Check, Tag, FileText, TrendingUp, Store, Minus
 } from 'lucide-react';
 
+// --- 版本設定 ---
+const APP_VERSION = 'v5.7';
+
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
   <style>{`
@@ -295,7 +298,10 @@ export default function App() {
 
   const Header = ({ rightAction }) => (
       <div className="bg-white px-6 py-5 flex justify-between items-center sticky top-0 z-40 bg-opacity-95 backdrop-blur-sm border-b border-gray-50">
-          <h1 className="text-3xl tracking-tighter font-serif font-bold text-black uppercase">MY WALK-IN CLOSET</h1>
+          <div>
+              <h1 className="text-3xl tracking-tighter font-serif font-bold text-black uppercase leading-none">MY WALK-IN CLOSET</h1>
+              <span className="text-[10px] text-gray-400 font-mono tracking-widest block mt-1">{APP_VERSION}</span>
+          </div>
           {rightAction}
       </div>
   );
