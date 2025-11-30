@@ -7,27 +7,27 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.21';
+const APP_VERSION = 'v5.28';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap');
     
-    /* [v5.20 修正] 徹底移除 overflow: hidden 與 height: 100%，確保 Canvas 預覽正常 */
+    /* [v5.28] 回歸 v5.24 的 CSS 設定 (此設定經驗證可正常預覽) */
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
-      /* 移除強制高度限制，讓內容自然撐開，修復預覽白屏問題 */
-      min-height: 100vh; 
+      height: 100%; /* 強制高度 */
+      overflow: hidden; /* 禁止瀏覽器外層捲動 */
       -webkit-font-smoothing: antialiased;
       background-color: #ffffff;
     }
     
     #root {
       width: 100%;
-      min-height: 100vh;
+      height: 100%;
       display: flex;
       justify-content: center;
       background-color: #ffffff;
@@ -40,10 +40,11 @@ const GlobalStyles = () => (
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Noto Sans TC", "Microsoft JhengHei", monospace !important;
     }
     
+    /* 隱藏 Scrollbar */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* --- iOS & Mobile 體驗優化 --- */
+    /* iOS & Mobile 優化 */
     @media screen and (max-width: 768px) {
       input, textarea, select {
         font-size: 16px !important;
@@ -162,7 +163,7 @@ const MaterialEditor = ({ materialString, onChange }) => {
                     <div key={i} className="flex gap-2 items-center">
                         <input 
                             type="text" 
-                            className="flex-1 border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none placeholder-gray-300 uppercase"
+                            className="flex-1 border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none placeholder-gray-300 uppercase rounded-none"
                             placeholder="COTTON"
                             value={row.name}
                             onChange={(e) => updateRow(i, 'name', e.target.value)}
@@ -170,7 +171,7 @@ const MaterialEditor = ({ materialString, onChange }) => {
                         <div className="flex items-center w-20 border-b border-gray-200">
                             <input 
                                 type="number" 
-                                className="w-full py-1 bg-transparent text-sm font-medium outline-none text-right"
+                                className="w-full py-1 bg-transparent text-sm font-medium outline-none text-right rounded-none"
                                 placeholder="100"
                                 value={row.percent}
                                 onChange={(e) => updateRow(i, 'percent', e.target.value)}
@@ -182,7 +183,7 @@ const MaterialEditor = ({ materialString, onChange }) => {
                         </button>
                     </div>
                 ))}
-                <button type="button" onClick={addRow} className="flex items-center gap-1 text-[10px] font-bold text-black uppercase hover:opacity-50 mt-1">
+                <button type="button" onClick={addRow} className="flex items-center gap-1 text-[10px] font-bold text-black uppercase hover:opacity-50 mt-1 rounded-none">
                     <Plus size={10} /> ADD MATERIAL
                 </button>
             </div>
@@ -191,18 +192,18 @@ const MaterialEditor = ({ materialString, onChange }) => {
 };
 
 const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleImageUpload, editingItem, isAiLoading, setView }) => (
-    <div className="bg-white min-h-full flex flex-col font-mono animate-fade-in">
+    <div className="bg-white h-full flex flex-col font-mono animate-fade-in">
         <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center sticky top-0 bg-white z-40 pt-safe-header">
             <button onClick={() => setView('wardrobe')}><X size={24} className="text-black"/></button>
             <span className="font-serif font-bold text-lg tracking-wide uppercase">{editingItem ? 'EDITOR' : 'NEW ITEM'}</span>
-            <button onClick={handleSaveItem} className="text-xs font-bold uppercase tracking-widest border-b border-black pb-0.5 hover:opacity-50">SAVE</button>
+            <button onClick={handleSaveItem} className="text-xs font-bold uppercase tracking-widest border-b border-black pb-0.5 hover:opacity-50 rounded-none">SAVE</button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-safe">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-safe hide-scrollbar">
             <div className="flex gap-4 h-64">
-                <div className="flex-1 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-gray-100 group">
+                <div className="flex-1 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-gray-100 group rounded-none">
                     {formData.image ? (
-                        <img src={formData.image} className="w-full h-full object-cover" />
+                        <img src={formData.image} className="w-full h-full object-cover" alt="Main" />
                     ) : (
                         <div className="text-center">
                             <Camera size={24} className="mx-auto mb-2 text-gray-300"/>
@@ -212,9 +213,9 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                     <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'image')} />
                 </div>
 
-                <div className="w-1/3 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-dashed border-gray-200 hover:border-black transition group">
+                <div className="w-1/3 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-dashed border-gray-200 hover:border-black transition group rounded-none">
                     {formData.labelImage ? (
-                        <img src={formData.labelImage} className="w-full h-full object-cover" />
+                        <img src={formData.labelImage} className="w-full h-full object-cover" alt="Label" />
                     ) : (
                         <div className="text-center p-2">
                             <Tag size={20} className="mx-auto mb-2 text-gray-300"/>
@@ -231,7 +232,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                 <div className="border-b border-black pb-2">
                     <input 
                       type="text" 
-                      className="w-full text-xl font-bold placeholder-gray-200 outline-none bg-transparent uppercase" 
+                      className="w-full text-xl font-bold placeholder-gray-200 outline-none bg-transparent uppercase rounded-none" 
                       placeholder="ITEM NAME" 
                       value={formData.name} 
                       onChange={e => setFormData({...formData, name: e.target.value})} 
@@ -294,20 +295,20 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                         <input 
                           type="text" 
                           placeholder="BRAND / SOURCE" 
-                          className="border-b border-gray-200 py-2 outline-none uppercase" 
+                          className="border-b border-gray-200 py-2 outline-none uppercase rounded-none" 
                           value={formData.source} 
                           onChange={e => setFormData({...formData, source: e.target.value})} 
                         />
                         <input 
                           type="number" 
                           placeholder="PRICE (NT$)" 
-                          className="border-b border-gray-200 py-2 outline-none" 
+                          className="border-b border-gray-200 py-2 outline-none rounded-none" 
                           value={formData.price} 
                           onChange={e => setFormData({...formData, price: e.target.value})} 
                         />
                     </div>
                     <textarea 
-                      className="w-full border-b border-gray-200 py-2 mt-4 text-sm outline-none resize-none h-20 placeholder-gray-300" 
+                      className="w-full border-b border-gray-200 py-2 mt-4 text-sm outline-none resize-none h-20 placeholder-gray-300 rounded-none" 
                       placeholder="NOTES..." 
                       value={formData.note} 
                       onChange={e => setFormData({...formData, note: e.target.value})} 
@@ -315,7 +316,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                 </div>
 
                 {editingItem && (
-                    <button onClick={() => handleDelete(editingItem.id)} className="w-full py-4 text-xs font-bold text-red-500 uppercase tracking-widest hover:bg-red-50 transition">
+                    <button onClick={() => handleDelete(editingItem.id)} className="w-full py-4 text-xs font-bold text-red-500 uppercase tracking-widest hover:bg-red-50 transition rounded-none">
                         DELETE ITEM
                     </button>
                 )}
@@ -334,13 +335,13 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
       <div className="h-full flex flex-col font-mono animate-fade-in">
         <Header />
 
-        <div className="bg-white sticky top-[84px] z-30 border-b border-gray-100">
+        <div className="bg-white border-b border-gray-100 z-30">
             <div className="flex w-full">
                 {CATEGORY_CONFIG.map(cat => (
                     <button 
                         key={cat.full}
                         onClick={() => setActiveCategory(cat.full)}
-                        className={`flex-1 py-3 text-[10px] sm:text-xs font-bold tracking-widest uppercase transition-colors ${activeCategory === cat.full ? 'text-black border-b-2 border-black bg-gray-50' : 'text-gray-300 hover:text-gray-500'}`}
+                        className={`flex-1 py-3 text-[10px] sm:text-xs font-bold tracking-widest uppercase transition-colors rounded-none ${activeCategory === cat.full ? 'text-black border-b-2 border-black bg-gray-50' : 'text-gray-300 hover:text-gray-500'}`}
                     >
                         {cat.label}
                     </button>
@@ -348,7 +349,7 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 pb-28">
+        <div className="flex-1 overflow-y-auto p-6 pb-28 hide-scrollbar">
             <div className="flex justify-between items-end mb-2">
                 <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CAPACITY</h2>
                 <span className="text-[10px] text-gray-500">{count}/{maxItems}</span>
@@ -359,7 +360,7 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
 
             <button 
                 onClick={() => { resetForm(activeCategory); setView('edit'); }}
-                className="w-full bg-black text-white py-4 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-800 transition mb-8 active:scale-[0.98]"
+                className="w-full bg-black text-white py-4 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-800 transition mb-8 active:scale-[0.98] rounded-none"
             >
                 <Plus size={16} />
                 <span className="text-xs font-bold uppercase tracking-widest">ADD NEW</span>
@@ -368,9 +369,9 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
             <div className="grid grid-cols-2 gap-x-4 gap-y-8">
                 {categoryItems.map(item => (
                     <div key={item.id} onClick={() => openEdit(item)} className="cursor-pointer group">
-                        <div className="aspect-[3/4] bg-gray-50 overflow-hidden relative shadow-sm">
+                        <div className="aspect-[3/4] bg-gray-50 overflow-hidden relative shadow-sm rounded-none">
                             {item.image ? (
-                                <img src={item.image} className="w-full h-full object-cover transition duration-500 group-hover:scale-105 filter grayscale-[10%] group-hover:grayscale-0" />
+                                <img src={item.image} className="w-full h-full object-cover transition duration-500 group-hover:scale-105 filter grayscale-[10%] group-hover:grayscale-0" alt="Item" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-200"><Shirt size={32}/></div>
                             )}
@@ -402,13 +403,13 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
         <div className="h-full flex flex-col font-mono animate-fade-in">
             <Header />
             
-            <div className="p-6 sticky top-[84px] bg-white z-30 border-b border-gray-50 space-y-4">
+            <div className="p-6 bg-white z-30 border-b border-gray-50 space-y-4">
                 <div className="bg-gray-50 flex items-center px-4 py-3">
                     <Search size={16} className="text-gray-400 mr-3"/>
                     <input 
                         type="text" 
                         placeholder="SEARCH COLLECTION..." 
-                        className="bg-transparent w-full text-sm outline-none placeholder-gray-400 font-medium uppercase"
+                        className="bg-transparent w-full text-sm outline-none placeholder-gray-400 font-medium uppercase rounded-none"
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                     />
@@ -423,7 +424,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 <button 
                                   key={r} 
                                   onClick={() => setRatingFilter(ratingFilter === r ? 0 : r)}
-                                  className={`w-7 h-7 flex items-center justify-center text-[10px] border transition ${ratingFilter===r ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-400 hover:border-gray-400'}`}
+                                  className={`w-7 h-7 flex items-center justify-center text-[10px] border transition rounded-none ${ratingFilter===r ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-400 hover:border-gray-400'}`}
                                 >
                                   {r}
                                 </button>
@@ -450,7 +451,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 pb-28">
+            <div className="flex-1 overflow-y-auto p-6 pb-28 hide-scrollbar">
                 {!isFiltering ? (
                     <div className="space-y-8 animate-fade-in">
                         <div>
@@ -459,12 +460,13 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 <h3 className="text-xs font-bold uppercase tracking-widest">Annual Expense</h3>
                             </div>
                             <div className="space-y-3">
-                                {stats.sortedExpenses.length > 0 ? stats.sortedExpenses.map(([year, total]) => (
+                                {stats.sortedExpenses.slice(0, 3).map(([year, total]) => (
                                     <div key={year} className="flex justify-between items-center border-b border-gray-50 pb-2">
                                         <span className="text-sm font-bold">{year}</span>
                                         <span className="text-sm text-gray-500 font-mono">NT${total.toLocaleString()}</span>
                                     </div>
-                                )) : <div className="text-xs text-gray-300">No data available</div>}
+                                ))}
+                                {stats.sortedExpenses.length === 0 && <div className="text-xs text-gray-300">No data available</div>}
                             </div>
                         </div>
 
@@ -474,12 +476,13 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 <h3 className="text-xs font-bold uppercase tracking-widest">Top Brands</h3>
                             </div>
                             <div className="space-y-3">
-                                {stats.sortedSources.length > 0 ? stats.sortedSources.map(([name, count]) => (
+                                {stats.sortedSources.slice(0, 3).map(([name, count]) => (
                                     <div key={name} className="flex justify-between items-center border-b border-gray-50 pb-2">
                                         <span className="text-sm font-bold">{name}</span>
                                         <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{count} ITEMS</span>
                                     </div>
-                                )) : <div className="text-xs text-gray-300">No data available</div>}
+                                ))}
+                                {stats.sortedSources.length === 0 && <div className="text-xs text-gray-300">No data available</div>}
                             </div>
                         </div>
                     </div>
@@ -491,8 +494,8 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                           <div className="grid grid-cols-2 gap-x-4 gap-y-8 animate-fade-in">
                               {filteredItems.map(item => (
                                   <div key={item.id} onClick={() => openEdit(item)} className="cursor-pointer group">
-                                      <div className="aspect-[3/4] bg-gray-50 overflow-hidden relative shadow-sm mb-2">
-                                          {item.image ? <img src={item.image} className="w-full h-full object-cover transition grayscale-[20%] group-hover:grayscale-0" /> : <div className="w-full h-full flex items-center justify-center"><Shirt size={32} className="text-gray-200"/></div>}
+                                      <div className="aspect-[3/4] bg-gray-50 overflow-hidden relative shadow-sm mb-2 rounded-none">
+                                          {item.image ? <img src={item.image} className="w-full h-full object-cover transition grayscale-[20%] group-hover:grayscale-0" alt="Item" /> : <div className="w-full h-full flex items-center justify-center"><Shirt size={32} className="text-gray-200"/></div>}
                                           <div className="absolute top-2 left-2 bg-black text-white px-1.5 py-0.5 text-[10px] font-bold tracking-wider">{item.id}</div>
                                       </div>
                                       
@@ -520,7 +523,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
                 <div className="grid grid-cols-4 gap-2">
                     {TEMP_RANGES.map(t => (
-                        <button key={t.value} onClick={() => setCustomConditions({...customConditions, tempRange: customConditions.tempRange === t.value ? '' : t.value})} className={`py-2 text-[10px] border uppercase ${customConditions.tempRange === t.value ? 'bg-black text-white border-black' : 'border-gray-200'}`}>{t.label}</button>
+                        <button key={t.value} onClick={() => setCustomConditions({...customConditions, tempRange: customConditions.tempRange === t.value ? '' : t.value})} className={`py-2 text-[10px] border uppercase rounded-none ${customConditions.tempRange === t.value ? 'bg-black text-white border-black' : 'border-gray-200'}`}>{t.label}</button>
                     ))}
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -529,7 +532,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                             const isWeather = WEATHER_TAGS.includes(tag);
                             const target = isWeather ? 'weather' : 'sensation';
                             setCustomConditions({...customConditions, [target]: customConditions[target] === tag ? '' : tag});
-                        }} className={`px-3 py-1.5 text-[10px] uppercase border ${customConditions.weather === tag || customConditions.sensation === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{tag}</button>
+                        }} className={`px-3 py-1.5 text-[10px] uppercase border rounded-none ${customConditions.weather === tag || customConditions.sensation === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{tag}</button>
                     ))}
                 </div>
             </div>
@@ -543,7 +546,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                             if (ENVIRONMENT_OPTIONS.includes(tag)) target = 'environment';
                             else if (ACTIVITY_OPTIONS.includes(tag)) target = 'activity';
                             setCustomConditions({...customConditions, [target]: customConditions[target] === tag ? '' : tag});
-                        }} className={`px-3 py-1.5 text-[10px] uppercase border ${[customConditions.environment, customConditions.activity, customConditions.purpose].includes(tag) ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{tag}</button>
+                        }} className={`px-3 py-1.5 text-[10px] uppercase border rounded-none ${[customConditions.environment, customConditions.activity, customConditions.purpose].includes(tag) ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{tag}</button>
                     ))}
                 </div>
             </div>
@@ -556,7 +559,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                     ))}
                 </div>
                 <div className={`pt-2 transition-opacity ${customConditions.targetColor ? 'opacity-30' : ''}`}>
-                    <input type="text" placeholder="ENTER ITEM ID #" className="w-full border-b border-gray-200 py-2 text-sm font-mono outline-none uppercase placeholder-gray-300" value={customConditions.targetId} onChange={e => setCustomConditions(prev => ({...prev, targetId: e.target.value.toUpperCase(), targetColor: ''}))} onFocus={() => setCustomConditions(prev => ({...prev, targetColor: ''}))} />
+                    <input type="text" placeholder="ENTER ITEM ID #" className="w-full border-b border-gray-200 py-2 text-sm font-mono outline-none uppercase placeholder-gray-300 rounded-none" value={customConditions.targetId} onChange={e => setCustomConditions(prev => ({...prev, targetId: e.target.value.toUpperCase(), targetColor: ''}))} onFocus={() => setCustomConditions(prev => ({...prev, targetColor: ''}))} />
                 </div>
             </div>
         </div>
@@ -564,29 +567,29 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
 
     const renderResult = () => (
         <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="col-span-2 aspect-[4/3] bg-gray-50 flex items-center justify-center border border-gray-100 p-4 gap-4">
+            <div className="col-span-2 aspect-[4/3] bg-gray-50 flex items-center justify-center border border-gray-100 p-4 gap-4 rounded-none">
                 {generatedOutfit.top && <img src={generatedOutfit.top.image} className="h-full object-contain mix-blend-multiply" alt="top"/>}
                 {generatedOutfit.outer && <img src={generatedOutfit.outer.image} className="h-full object-contain mix-blend-multiply" alt="outer"/>}
             </div>
-            {generatedOutfit.bottom && <div className="aspect-square bg-gray-50 border border-gray-100 p-2"><img src={generatedOutfit.bottom.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
-            {generatedOutfit.shoes && <div className="aspect-square bg-gray-50 border border-gray-100 p-2"><img src={generatedOutfit.shoes.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
+            {generatedOutfit.bottom && <div className="aspect-square bg-gray-50 border border-gray-100 p-2 rounded-none"><img src={generatedOutfit.bottom.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
+            {generatedOutfit.shoes && <div className="aspect-square bg-gray-50 border border-gray-100 p-2 rounded-none"><img src={generatedOutfit.shoes.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
         </div>
     );
 
     return (
         <div className="h-full flex flex-col font-mono animate-fade-in relative">
             <Header />
-            <div className="flex-1 overflow-y-auto p-6 pb-32">
+            <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
                 <div className="flex border-b border-gray-100 mb-4">
-                    <button onClick={() => {setOutfitTab('random'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition ${outfitTab === 'random' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>RANDOM</button>
-                    <button onClick={() => {setOutfitTab('custom'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition ${outfitTab === 'custom' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>CONDITIONS</button>
+                    <button onClick={() => {setOutfitTab('random'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition rounded-none ${outfitTab === 'random' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>RANDOM</button>
+                    <button onClick={() => {setOutfitTab('custom'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition rounded-none ${outfitTab === 'custom' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>CONDITIONS</button>
                 </div>
                 {outfitTab === 'custom' && !generatedOutfit && renderConditions()}
                 {outfitTab === 'random' && !generatedOutfit && <div className="text-center py-20 text-gray-300"><Sparkles size={48} className="mx-auto mb-4 opacity-50 stroke-1"/>GET INSPIRED</div>}
                 {generatedOutfit && renderResult()}
             </div>
             <div className="absolute bottom-24 left-6 right-6 z-20 pb-safe">
-                <button onClick={generateOutfit} className="w-full bg-black text-white py-4 text-xs font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2">
+                <button onClick={generateOutfit} className="w-full bg-black text-white py-4 text-xs font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 rounded-none">
                     <RefreshCw size={16} /> {generatedOutfit ? 'REGENERATE' : 'GENERATE OUTFIT'}
                 </button>
             </div>
@@ -597,11 +600,11 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
 const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShoppingResult, isAnalyzing, setIsAnalyzing }) => (
     <div className="h-full flex flex-col font-mono animate-fade-in">
         <Header />
-        <div className="flex-1 overflow-y-auto p-6">
-            <div className="border border-gray-200 p-8 text-center space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
+            <div className="border border-gray-200 p-8 text-center space-y-4 rounded-none">
                 <h3 className="font-serif text-xl uppercase">SHOPPING ASSISTANT</h3>
                 <p className="text-xs text-gray-400 leading-relaxed uppercase">UPLOAD A PHOTO OF THE ITEM YOU WANT TO BUY. AI WILL ANALYZE YOUR CURRENT WARDROBE TO PREVENT DUPLICATES.</p>
-                <label className="block w-full py-4 bg-black text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:opacity-90">
+                <label className="block w-full py-4 bg-black text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:opacity-90 rounded-none">
                     UPLOAD PHOTO
                     <input type="file" className="hidden" onChange={(e) => {
                         if(e.target.files[0]) {
@@ -613,7 +616,7 @@ const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShop
             </div>
             {isAnalyzing && <div className="py-10 text-center"><Loader2 className="animate-spin mx-auto"/></div>}
             {shoppingResult && (
-                <div className="mt-8 bg-gray-50 p-6 border border-gray-100">
+                <div className="mt-8 bg-gray-50 p-6 border border-gray-100 rounded-none">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">ANALYSIS RESULT</span>
                     <h4 className="font-serif text-lg mb-1 uppercase">WAIT A MOMENT.</h4>
                     <p className="text-sm text-gray-600 uppercase">YOU ALREADY HAVE <strong>{shoppingResult.match}</strong> SIMILAR ITEMS IN YOUR WARDROBE.</p>
@@ -627,12 +630,12 @@ const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShop
 
 export default function App() {
   return (
-    <div className="bg-white min-h-screen flex justify-center text-black selection:bg-gray-200">
+    // [v5.27] 使用 h-[100dvh] (動態視窗高度) 搭配 overflow-hidden 來解決手機滑動問題
+    // 同時保留 Canvas 預覽能力 (外層不使用 fixed)
+    <div className="bg-white h-[100dvh] w-full flex justify-center text-black selection:bg-gray-200 overflow-hidden">
       <GlobalStyles />
-      <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
-        
+      <div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
         <AppContent />
-
       </div>
     </div>
   );
@@ -641,8 +644,12 @@ export default function App() {
 // Separate component to hold state and logic
 const AppContent = () => {
     const [items, setItems] = useState(() => {
-        const saved = localStorage.getItem('wardrobe_items_v5');
-        return saved ? JSON.parse(saved) : INITIAL_DATA;
+        try {
+            const saved = localStorage.getItem('wardrobe_items_v5');
+            return saved ? JSON.parse(saved) : INITIAL_DATA;
+        } catch (e) {
+            return INITIAL_DATA;
+        }
     });
     
     const [view, setView] = useState('wardrobe'); 
@@ -694,13 +701,22 @@ const AppContent = () => {
     const generateId = (categoryFull) => {
         const catConfig = CATEGORY_CONFIG.find(c => c.full === categoryFull);
         const code = catConfig ? catConfig.code : 'X';
-        const randomNum = Math.floor(Math.random() * 90) + 10; 
-        return `${code}${randomNum}`;
+        
+        // [v5.25] 自動掃描並遞增 ID
+        const existingIds = items
+            .filter(i => i.id.startsWith(code))
+            .map(i => parseInt(i.id.substring(1)))
+            .filter(n => !isNaN(n));
+        
+        const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+        const nextId = maxId + 1;
+        
+        return `${code}${nextId.toString().padStart(2, '0')}`;
     };
 
     const handleSaveItem = (e) => {
         e.preventDefault();
-        // [v5.18 Fix] Allow saving even if name is empty (default to Category + ID)
+        
         const newId = editingItem ? editingItem.id : generateId(formData.category);
         const nameToSave = formData.name.trim() || `${formData.category} #${newId}`;
 
@@ -710,11 +726,15 @@ const AppContent = () => {
             name: nameToSave,
             purchaseDate: formData.isUnknownDate ? 'unknown' : formData.purchaseDate
         };
-        if (editingItem) {
-            setItems(items.map(i => i.id === editingItem.id ? newItemData : i));
-        } else {
-            setItems([newItemData, ...items]);
-        }
+
+        setItems(prevItems => {
+            if (editingItem) {
+                return prevItems.map(i => i.id === editingItem.id ? newItemData : i);
+            } else {
+                return [newItemData, ...prevItems];
+            }
+        });
+        
         setView('wardrobe');
     };
 
@@ -847,7 +867,7 @@ const AppContent = () => {
             
             {view !== 'edit' && (
                 <>
-                    <div className="flex-1 overflow-y-auto scrollbar-hide">
+                    <div className="flex-1 flex flex-col overflow-hidden">
                         {view === 'wardrobe' && 
                             <WardrobePage 
                                 items={items} 
