@@ -7,13 +7,22 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.12';
+const APP_VERSION = 'v5.15';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap');
     
+    /* 強制鎖定視窗，防止 iOS 橡皮筋效果與整體頁面滑動 */
+    html, body, #root {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      position: fixed;
+    }
+
     .font-serif {
       font-family: 'Noto Serif TC', 'Songti TC', serif !important;
     }
@@ -96,7 +105,7 @@ const serializeMaterialRows = (rows) => {
     return rows.filter(r => r.name).map(r => `${r.name.toUpperCase()}${r.percent ? ' ' + r.percent + '%' : ''}`).join(' / ');
 };
 
-// --- Sub-Components (Move outside App to prevent re-render focus loss) ---
+// --- Sub-Components ---
 
 const Header = ({ rightAction }) => (
     <div className="bg-white px-6 pt-safe-header pb-4 flex justify-between items-end sticky top-0 z-40 bg-opacity-95 backdrop-blur-sm border-b border-gray-50 shadow-sm transition-all duration-300">
@@ -172,14 +181,14 @@ const MaterialEditor = ({ materialString, onChange }) => {
 };
 
 const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleImageUpload, editingItem, isAiLoading, setView }) => (
-    <div className="bg-white min-h-full pb-20 animate-fade-in font-mono">
+    <div className="bg-white h-full flex flex-col font-mono animate-fade-in">
         <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center sticky top-0 bg-white z-40 pt-safe-header">
             <button onClick={() => setView('wardrobe')}><X size={24} className="text-black"/></button>
             <span className="font-serif font-bold text-lg tracking-wide uppercase">{editingItem ? 'EDITOR' : 'NEW ITEM'}</span>
             <button onClick={handleSaveItem} className="text-xs font-bold uppercase tracking-widest border-b border-black pb-0.5 hover:opacity-50">SAVE</button>
         </div>
 
-        <div className="p-6 space-y-8">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-safe">
             <div className="flex gap-4 h-64">
                 <div className="flex-1 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-gray-100 group">
                     {formData.image ? (
@@ -303,7 +312,7 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
     const progress = Math.min((count / maxItems) * 100, 100);
 
     return (
-      <div className="pb-28 animate-fade-in min-h-full flex flex-col font-mono">
+      <div className="h-full flex flex-col font-mono animate-fade-in">
         <Header />
 
         <div className="bg-white sticky top-[84px] z-30 border-b border-gray-100">
@@ -320,7 +329,7 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
             </div>
         </div>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6 pb-28">
             <div className="flex justify-between items-end mb-2">
                 <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CAPACITY</h2>
                 <span className="text-[10px] text-gray-500">{count}/{maxItems}</span>
@@ -371,7 +380,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
     });
 
     return (
-        <div className="pb-24 animate-fade-in min-h-full font-mono">
+        <div className="h-full flex flex-col font-mono animate-fade-in">
             <Header />
             
             <div className="p-6 sticky top-[84px] bg-white z-30 border-b border-gray-50 space-y-4">
@@ -422,7 +431,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
             </div>
 
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto p-6 pb-28">
                 {!isFiltering ? (
                     <div className="space-y-8 animate-fade-in">
                         <div>
@@ -486,13 +495,10 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
 };
 
 const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomConditions, generatedOutfit, setGeneratedOutfit, generateOutfit, isColorSimilar }) => {
-    // ... OutfitPage render logic (moved from App)
-    // NOTE: For brevity, reusing the render logic structure. 
-    // In a real refactor, we'd copy the JSX from the original OutfitPage component here.
-    
+    // 壓縮介面間距 (space-y-4, mb-4, py-2)
     const renderConditions = () => (
-        <div className="space-y-8">
-            <div className="space-y-3">
+        <div className="space-y-4">
+            <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
                 <div className="grid grid-cols-4 gap-2">
                     {TEMP_RANGES.map(t => (
@@ -510,7 +516,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                 </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CONTEXT</label>
                 <div className="flex flex-wrap gap-2">
                     {[...ENVIRONMENT_OPTIONS, ...ACTIVITY_OPTIONS, ...PURPOSE_TAGS].map(tag => (
@@ -524,7 +530,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                 </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">TARGET (SELECT ONE)</label>
                 <div className={`grid grid-cols-7 gap-2 transition-opacity ${customConditions.targetId ? 'opacity-30 pointer-events-none' : ''}`}>
                     {COLOR_PALETTE.map(c => (
@@ -539,7 +545,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
     );
 
     const renderResult = () => (
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="col-span-2 aspect-[4/3] bg-gray-50 flex items-center justify-center border border-gray-100 p-4 gap-4">
                 {generatedOutfit.top && <img src={generatedOutfit.top.image} className="h-full object-contain mix-blend-multiply" alt="top"/>}
                 {generatedOutfit.outer && <img src={generatedOutfit.outer.image} className="h-full object-contain mix-blend-multiply" alt="outer"/>}
@@ -550,10 +556,10 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
     );
 
     return (
-        <div className="pb-28 animate-fade-in min-h-full font-mono flex flex-col relative">
+        <div className="h-full flex flex-col font-mono animate-fade-in relative">
             <Header />
-            <div className="p-6 flex-1 overflow-y-auto pb-32">
-                <div className="flex border-b border-gray-100 mb-8">
+            <div className="flex-1 overflow-y-auto p-6 pb-32">
+                <div className="flex border-b border-gray-100 mb-4">
                     <button onClick={() => {setOutfitTab('random'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition ${outfitTab === 'random' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>RANDOM</button>
                     <button onClick={() => {setOutfitTab('custom'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition ${outfitTab === 'custom' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>CONDITIONS</button>
                 </div>
@@ -561,7 +567,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                 {outfitTab === 'random' && !generatedOutfit && <div className="text-center py-20 text-gray-300"><Sparkles size={48} className="mx-auto mb-4 opacity-50 stroke-1"/>GET INSPIRED</div>}
                 {generatedOutfit && renderResult()}
             </div>
-            <div className="absolute bottom-24 left-6 right-6 z-20">
+            <div className="absolute bottom-24 left-6 right-6 z-20 pb-safe">
                 <button onClick={generateOutfit} className="w-full bg-black text-white py-4 text-xs font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2">
                     <RefreshCw size={16} /> {generatedOutfit ? 'REGENERATE' : 'GENERATE OUTFIT'}
                 </button>
@@ -570,10 +576,10 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
     );
 };
 
-const ShoppingPage = ({ shoppingResult, setShoppingResult, isAnalyzing, setIsAnalyzing }) => (
-    <div className="pb-28 animate-fade-in min-h-full font-mono">
+const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShoppingResult, isAnalyzing, setIsAnalyzing }) => (
+    <div className="h-full flex flex-col font-mono animate-fade-in">
         <Header />
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
             <div className="border border-gray-200 p-8 text-center space-y-4">
                 <h3 className="font-serif text-xl uppercase">SHOPPING ASSISTANT</h3>
                 <p className="text-xs text-gray-400 leading-relaxed uppercase">UPLOAD A PHOTO OF THE ITEM YOU WANT TO BUY. AI WILL ANALYZE YOUR CURRENT WARDROBE TO PREVENT DUPLICATES.</p>
@@ -603,11 +609,10 @@ const ShoppingPage = ({ shoppingResult, setShoppingResult, isAnalyzing, setIsAna
 
 export default function App() {
   return (
-    <div className="bg-white min-h-screen flex justify-center text-black selection:bg-gray-200">
+    <div className="bg-white h-[100dvh] w-full flex justify-center text-black selection:bg-gray-200 overflow-hidden">
       <GlobalStyles />
-      <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
+      <div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
         
-        {/* Render pages based on view state */}
         <AppContent />
 
       </div>
@@ -615,7 +620,7 @@ export default function App() {
   );
 }
 
-// Separate component to hold state and logic, cleaner App structure
+// Separate component to hold state and logic
 const AppContent = () => {
     const [items, setItems] = useState(() => {
         const saved = localStorage.getItem('wardrobe_items_v5');
@@ -658,9 +663,6 @@ const AppContent = () => {
         localStorage.setItem('wardrobe_items_v5', JSON.stringify(items));
     }, [items]);
 
-    // ... (Logic helpers like resetForm, generateId, handleSaveItem, etc. need to be inside or passed down)
-    // To fix the "keyboard close" issue, we MUST define them here but pass to components OUTSIDE.
-    
     const resetForm = (categoryOverride = null) => {
         setFormData({
             name: '', category: categoryOverride || activeCategory, season: 'ALL', color: '#000000',
@@ -669,13 +671,6 @@ const AppContent = () => {
             source: '', price: '', note: ''
         });
         setEditingItem(null);
-    };
-
-    const generateId = (categoryFull) => {
-        const catConfig = CATEGORY_CONFIG.find(c => c.full === categoryFull);
-        const code = catConfig ? catConfig.code : 'X';
-        const randomNum = Math.floor(Math.random() * 90) + 10; 
-        return `${code}${randomNum}`;
     };
 
     const handleSaveItem = (e) => {
@@ -731,16 +726,6 @@ const AppContent = () => {
         }
     };
 
-    const openEdit = (item) => {
-        setEditingItem(item);
-        setFormData({
-            ...item,
-            isUnknownDate: item.purchaseDate === 'unknown',
-            purchaseDate: item.purchaseDate === 'unknown' ? '' : item.purchaseDate
-        });
-        setView('edit');
-    };
-
     const isColorSimilar = (hex1, hex2) => hex1 && hex2 && hex1.toLowerCase() === hex2.toLowerCase(); 
 
     const generateOutfit = () => {
@@ -757,7 +742,8 @@ const AppContent = () => {
                     if (t.category === 'OUTER') picks.outer = t;
                 }
             } else if (customConditions.targetColor) {
-                const matches = pool.filter(i => isColorSimilar(i.color, customConditions.targetColor));
+                // 修改邏輯：改為精確比對
+                const matches = pool.filter(i => i.color === customConditions.targetColor);
                 if(matches.length > 0) {
                     const m = matches[Math.floor(Math.random()*matches.length)];
                     if(m.category === 'TOPS' && !picks.top) picks.top = m;
