@@ -7,32 +7,13 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.16';
+const APP_VERSION = 'v5.17';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap');
     
-    /* [v5.16 修正] 改用更兼容的方式鎖定視窗，恢復 Canvas 預覽功能 */
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden; /* 禁止瀏覽器本身的捲動 */
-      overscroll-behavior: none; /* 禁止 iOS 彈性拉動 */
-      -webkit-font-smoothing: antialiased;
-    }
-    
-    #root {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      background-color: #ffffff;
-    }
-
     .font-serif {
       font-family: 'Noto Serif TC', 'Songti TC', serif !important;
     }
@@ -191,7 +172,7 @@ const MaterialEditor = ({ materialString, onChange }) => {
 };
 
 const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleImageUpload, editingItem, isAiLoading, setView }) => (
-    <div className="bg-white h-full flex flex-col font-mono animate-fade-in">
+    <div className="bg-white min-h-full flex flex-col font-mono animate-fade-in">
         <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center sticky top-0 bg-white z-40 pt-safe-header">
             <button onClick={() => setView('wardrobe')}><X size={24} className="text-black"/></button>
             <span className="font-serif font-bold text-lg tracking-wide uppercase">{editingItem ? 'EDITOR' : 'NEW ITEM'}</span>
@@ -505,7 +486,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
 };
 
 const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomConditions, generatedOutfit, setGeneratedOutfit, generateOutfit, isColorSimilar }) => {
-    // 壓縮介面間距 (space-y-4, mb-4, py-2)
     const renderConditions = () => (
         <div className="space-y-4">
             <div className="space-y-2">
@@ -619,11 +599,10 @@ const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShop
 
 export default function App() {
   return (
-    // 外層容器：鎖定高度為 100dvh (手機動態高度)，隱藏溢出
-    <div className="bg-white h-[100dvh] w-full flex justify-center text-black selection:bg-gray-200 overflow-hidden">
+    // [v5.17] 恢復為 v5.12 的穩定版容器設定，移除 v5.14 的 h-[100dvh] 與 position: fixed
+    <div className="bg-white min-h-screen flex justify-center text-black selection:bg-gray-200">
       <GlobalStyles />
-      {/* 內層 App 容器：高度 100%，使用 flex-col 排版 */}
-      <div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
+      <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
         
         <AppContent />
 
@@ -736,6 +715,16 @@ const AppContent = () => {
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const openEdit = (item) => {
+        setEditingItem(item);
+        setFormData({
+            ...item,
+            isUnknownDate: item.purchaseDate === 'unknown',
+            purchaseDate: item.purchaseDate === 'unknown' ? '' : item.purchaseDate
+        });
+        setView('edit');
     };
 
     const isColorSimilar = (hex1, hex2) => hex1 && hex2 && hex1.toLowerCase() === hex2.toLowerCase(); 
