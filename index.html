@@ -3,17 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     
-    <!-- 修改這裡：將路徑改為 /icon.png，並將 type 改為 image/png -->
-    <!-- 請確認您已將圖片命名為 icon.png 並放入 public 資料夾 -->
+    <!-- 1. 圖示設定 -->
     <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="apple-touch-icon" href="/icon.png" />
     
-    <!-- 1. 設定適應手機螢幕 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 2. PWA 關鍵設定 (新增) -->
+    <link rel="manifest" href="/manifest.json" />
     
-    <!-- 2. 禁止搜尋引擎爬蟲 (Privacy Setting) -->
+    <!-- 3. iOS 專用獨立模式設定 (新增：這行讓它變身獨立 App) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="My Closet">
+    
+    <!-- 4. 螢幕適配 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- 5. 隱私設定 -->
     <meta name="robots" content="noindex, nofollow" />
     
-    <!-- 3. 修改網頁標題 (Browser Tab Name) -->
     <title>My Walk-in Closet</title>
   </head>
   <body>

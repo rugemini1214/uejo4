@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.7';
+const APP_VERSION = 'v5.10';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
@@ -23,6 +23,26 @@ const GlobalStyles = () => (
     
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* --- iOS & Mobile 體驗優化 --- */
+    
+    /* 1. 防止輸入時畫面放大 */
+    @media screen and (max-width: 768px) {
+      input, textarea, select {
+        font-size: 16px !important;
+      }
+    }
+
+    /* 2. 底部安全區域 (閃避 Home Bar) */
+    .pb-safe {
+      padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    }
+
+    /* 3. 頂部安全區域 (適配靈動島/瀏海) */
+    /* 設定最小高度，確保不會撞到狀態列，同時減少多餘空白 */
+    .pt-safe-header {
+      padding-top: max(1rem, env(safe-area-inset-top));
+    }
   `}</style>
 );
 
@@ -46,7 +66,6 @@ const CATEGORY_CONFIG = [
 ];
 
 const THICKNESS_OPTIONS = ['THIN', 'MEDIUM', 'THICK', 'WARM'];
-// AI 模擬用的材質庫 (複雜混紡)
 const MATERIALS_MOCK = [
     'COTTON 100%', 
     'COTTON 60% / POLYESTER 40%', 
@@ -80,7 +99,6 @@ const COLOR_PALETTE = [
     { name: 'Pink', value: '#F48FB1' }, { name: 'Purple', value: '#6A1B9A' },
 ];
 
-// --- 輔助函式：材質解析與序列化 ---
 const parseMaterialString = (str) => {
     if (!str) return [{ name: '', percent: '' }];
     return str.split('/').map(part => {
@@ -297,7 +315,8 @@ export default function App() {
   // --- Components ---
 
   const Header = ({ rightAction }) => (
-      <div className="bg-white px-6 py-6 flex justify-between items-end sticky top-0 z-40 bg-opacity-95 backdrop-blur-sm border-b border-gray-50 shadow-sm transition-all duration-300">
+      // 使用 pt-safe-header 自動適配靈動島，並維持下方 pb-4 的間距
+      <div className="bg-white px-6 pt-safe-header pb-4 flex justify-between items-end sticky top-0 z-40 bg-opacity-95 backdrop-blur-sm border-b border-gray-50 shadow-sm transition-all duration-300">
           <div className="flex items-baseline gap-3">
               <h1 className="text-3xl tracking-tighter font-serif font-bold text-black uppercase leading-none">MY WALK-IN CLOSET</h1>
               <span className="text-[10px] text-gray-400 font-mono tracking-widest">{APP_VERSION}</span>
@@ -372,7 +391,6 @@ export default function App() {
   const MaterialEditor = ({ materialString, onChange }) => {
       const [rows, setRows] = useState(parseMaterialString(materialString));
 
-      // 同步外部變更 (例如 AI 判讀後更新)
       useEffect(() => {
           const parsed = parseMaterialString(materialString);
           if (JSON.stringify(parsed) !== JSON.stringify(rows)) {
@@ -382,7 +400,7 @@ export default function App() {
 
       const updateRow = (index, field, value) => {
           const newRows = [...rows];
-          newRows[index] = { ...newRows[index], [field]: value.toUpperCase() };
+          newRows[index] = { ...newRows[index], [field]: value };
           setRows(newRows);
           onChange(serializeMaterialRows(newRows));
       };
@@ -405,7 +423,7 @@ export default function App() {
                       <div key={i} className="flex gap-2 items-center">
                           <input 
                               type="text" 
-                              className="flex-1 border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase placeholder-gray-300"
+                              className="flex-1 border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none placeholder-gray-300 uppercase"
                               placeholder="COTTON"
                               value={row.name}
                               onChange={(e) => updateRow(i, 'name', e.target.value)}
@@ -472,7 +490,13 @@ export default function App() {
 
               <div className="space-y-6">
                   <div className="border-b border-black pb-2">
-                      <input type="text" className="w-full text-xl font-bold placeholder-gray-200 outline-none bg-transparent uppercase" placeholder="ITEM NAME" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} />
+                      <input 
+                        type="text" 
+                        className="w-full text-xl font-bold placeholder-gray-200 outline-none bg-transparent uppercase" 
+                        placeholder="ITEM NAME" 
+                        value={formData.name} 
+                        onChange={e => setFormData({...formData, name: e.target.value})} 
+                      />
                   </div>
 
                   <div className="grid grid-cols-1 gap-6">
@@ -491,7 +515,6 @@ export default function App() {
                           </div>
                       </div>
                       
-                      {/* New Material Editor */}
                       <MaterialEditor 
                           materialString={formData.material} 
                           onChange={(newVal) => setFormData({...formData, material: newVal})}
@@ -520,10 +543,27 @@ export default function App() {
                   <div className="pt-6 border-t border-gray-100">
                       <h3 className="text-xs font-bold text-black uppercase tracking-widest mb-4">META DATA</h3>
                       <div className="grid grid-cols-2 gap-4 text-sm">
-                          <input type="text" placeholder="BRAND / SOURCE" className="border-b border-gray-200 py-2 outline-none uppercase" value={formData.source} onChange={e => setFormData({...formData, source: e.target.value.toUpperCase()})} />
-                          <input type="number" placeholder="PRICE (NT$)" className="border-b border-gray-200 py-2 outline-none" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                          <input 
+                            type="text" 
+                            placeholder="BRAND / SOURCE" 
+                            className="border-b border-gray-200 py-2 outline-none uppercase" 
+                            value={formData.source} 
+                            onChange={e => setFormData({...formData, source: e.target.value})} 
+                          />
+                          <input 
+                            type="number" 
+                            placeholder="PRICE (NT$)" 
+                            className="border-b border-gray-200 py-2 outline-none" 
+                            value={formData.price} 
+                            onChange={e => setFormData({...formData, price: e.target.value})} 
+                          />
                       </div>
-                      <textarea className="w-full border-b border-gray-200 py-2 mt-4 text-sm outline-none resize-none h-20 placeholder-gray-300 uppercase" placeholder="NOTES..." value={formData.note} onChange={e => setFormData({...formData, note: e.target.value.toUpperCase()})} />
+                      <textarea 
+                        className="w-full border-b border-gray-200 py-2 mt-4 text-sm outline-none resize-none h-20 placeholder-gray-300" 
+                        placeholder="NOTES..." 
+                        value={formData.note} 
+                        onChange={e => setFormData({...formData, note: e.target.value})} 
+                      />
                   </div>
 
                   {editingItem && (
@@ -805,7 +845,8 @@ export default function App() {
                     {view === 'shopping' && <ShoppingPage />}
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 flex justify-between items-center z-50 text-[10px] font-bold font-mono uppercase tracking-widest text-gray-400">
+                {/* 底部導覽列 - 增加 pb-safe 類別 */}
+                <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 pt-4 pb-safe flex justify-between items-center z-50 text-[10px] font-bold font-mono uppercase tracking-widest text-gray-400">
                     <button onClick={() => setView('wardrobe')} className={`flex flex-col items-center gap-1 transition ${view === 'wardrobe' ? 'text-black' : 'hover:text-gray-600'}`}>
                         <LayoutGrid size={20} strokeWidth={1.5} /> WARDROBE
                     </button>
