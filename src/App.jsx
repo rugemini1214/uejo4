@@ -3,17 +3,36 @@ import {
   Plus, Trash2, Shuffle, Shirt, Search, X, Save, RefreshCw, 
   ShoppingBag, Camera, ArrowRight, Loader2, Sparkles, 
   Thermometer, MapPin, Hash, Star, Briefcase, 
-  Wind, CloudRain, Sun, Cloud, LayoutGrid, ListFilter, Check, Tag, FileText, TrendingUp, Store, Minus
+  Wind, CloudRain, Sun, Cloud, LayoutGrid, ListFilter, Check, Tag, FileText, TrendingUp, Store, Minus, ChevronDown
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.17';
+const APP_VERSION = 'v5.21';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap');
     
+    /* [v5.20 修正] 徹底移除 overflow: hidden 與 height: 100%，確保 Canvas 預覽正常 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      /* 移除強制高度限制，讓內容自然撐開，修復預覽白屏問題 */
+      min-height: 100vh; 
+      -webkit-font-smoothing: antialiased;
+      background-color: #ffffff;
+    }
+    
+    #root {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      background-color: #ffffff;
+    }
+
     .font-serif {
       font-family: 'Noto Serif TC', 'Songti TC', serif !important;
     }
@@ -227,7 +246,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                                 <button 
                                   key={c.name}
                                   onClick={() => setFormData({...formData, color: c.value})}
-                                  className={`w-6 h-6 rounded-full border transition ${formData.color === c.value ? 'ring-2 ring-black ring-offset-2' : 'border-gray-200'}`}
+                                  className={`w-6 h-6 rounded-sm border transition ${formData.color === c.value ? 'ring-2 ring-black ring-offset-2' : 'border-gray-200'}`}
                                   style={{backgroundColor: c.value}}
                                   title={c.name}
                                 />
@@ -244,9 +263,18 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                 <div className="grid grid-cols-2 gap-6">
                     <div>
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">CATEGORY</label>
-                        <select className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                            {CATEGORY_CONFIG.map(c => <option key={c.full} value={c.full}>{c.full}</option>)}
-                        </select>
+                        <div className="relative">
+                            <select 
+                                className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none" 
+                                value={formData.category} 
+                                onChange={e => setFormData({...formData, category: e.target.value})}
+                            >
+                                {CATEGORY_CONFIG.map(c => <option key={c.full} value={c.full}>{c.full}</option>)}
+                            </select>
+                            <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
+                                <ChevronDown size={14} />
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">RATING</label>
@@ -413,7 +441,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 <button 
                                   key={c.name}
                                   onClick={() => setColorFilter(colorFilter === c.value ? '' : c.value)}
-                                  className={`w-5 h-5 rounded-full border flex-shrink-0 ${colorFilter === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-200'}`}
+                                  className={`w-5 h-5 rounded-sm border flex-shrink-0 ${colorFilter === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-200'}`}
                                   style={{backgroundColor: c.value}}
                                 />
                             ))}
@@ -524,7 +552,7 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">TARGET (SELECT ONE)</label>
                 <div className={`grid grid-cols-7 gap-2 transition-opacity ${customConditions.targetId ? 'opacity-30 pointer-events-none' : ''}`}>
                     {COLOR_PALETTE.map(c => (
-                        <button key={c.name} onClick={() => setCustomConditions(prev => ({...prev, targetColor: prev.targetColor === c.value ? '' : c.value, targetId: ''}))} className={`w-full aspect-square border ${customConditions.targetColor === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-100'}`} style={{backgroundColor: c.value}} />
+                        <button key={c.name} onClick={() => setCustomConditions(prev => ({...prev, targetColor: prev.targetColor === c.value ? '' : c.value, targetId: ''}))} className={`w-full aspect-square rounded-sm border ${customConditions.targetColor === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-100'}`} style={{backgroundColor: c.value}} />
                     ))}
                 </div>
                 <div className={`pt-2 transition-opacity ${customConditions.targetColor ? 'opacity-30' : ''}`}>
@@ -599,7 +627,6 @@ const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShop
 
 export default function App() {
   return (
-    // [v5.17] 恢復為 v5.12 的穩定版容器設定，移除 v5.14 的 h-[100dvh] 與 position: fixed
     <div className="bg-white min-h-screen flex justify-center text-black selection:bg-gray-200">
       <GlobalStyles />
       <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
@@ -664,14 +691,23 @@ const AppContent = () => {
         setEditingItem(null);
     };
 
+    const generateId = (categoryFull) => {
+        const catConfig = CATEGORY_CONFIG.find(c => c.full === categoryFull);
+        const code = catConfig ? catConfig.code : 'X';
+        const randomNum = Math.floor(Math.random() * 90) + 10; 
+        return `${code}${randomNum}`;
+    };
+
     const handleSaveItem = (e) => {
         e.preventDefault();
-        if (!formData.name) return;
-        
+        // [v5.18 Fix] Allow saving even if name is empty (default to Category + ID)
         const newId = editingItem ? editingItem.id : generateId(formData.category);
+        const nameToSave = formData.name.trim() || `${formData.category} #${newId}`;
+
         const newItemData = {
             ...formData,
             id: newId,
+            name: nameToSave,
             purchaseDate: formData.isUnknownDate ? 'unknown' : formData.purchaseDate
         };
         if (editingItem) {
