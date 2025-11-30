@@ -3,18 +3,18 @@ import {
   Plus, Trash2, Shuffle, Shirt, Search, X, Save, RefreshCw, 
   ShoppingBag, Camera, ArrowRight, Loader2, Sparkles, 
   Thermometer, MapPin, Hash, Star, Briefcase, 
-  Wind, CloudRain, Sun, Cloud, LayoutGrid, ListFilter, Check, Tag, FileText, TrendingUp, Store, Minus, ChevronDown
+  Wind, CloudRain, Sun, Cloud, LayoutGrid, ListFilter, Check, Tag, FileText, TrendingUp, Store, Minus, ChevronDown, Download, Upload, ChevronRight, BarChart3
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.28';
+const APP_VERSION = 'v5.41';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap');
     
-    /* [v5.28] 回歸 v5.24 的 CSS 設定 (此設定經驗證可正常預覽) */
+    /* [v5.32] 回歸 v5.24 的鎖定架構，解決頁面切換時的寬度跳動問題 */
     html, body {
       margin: 0;
       padding: 0;
@@ -40,7 +40,7 @@ const GlobalStyles = () => (
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Noto Sans TC", "Microsoft JhengHei", monospace !important;
     }
     
-    /* 隱藏 Scrollbar */
+    /* 隱藏 Scrollbar 但保留捲動功能 */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -50,22 +50,127 @@ const GlobalStyles = () => (
         font-size: 16px !important;
       }
     }
+
+    /* [v5.35] 底部安全區域 */
     .pb-safe {
-      padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+      padding-bottom: calc(env(safe-area-inset-bottom) + 1.25rem);
     }
+    
     .pt-safe-header {
       padding-top: max(1rem, env(safe-area-inset-top));
     }
+    
+    /* Modal 動畫 */
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-slide-up {
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
   `}</style>
 );
+
+// --- IndexedDB 工具 ---
+const DB_NAME = 'WardrobeDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'items';
+
+const dbHelper = {
+  open: () => {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  getAll: async () => {
+    const db = await dbHelper.open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  save: async (item) => {
+    const db = await dbHelper.open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put(item);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  delete: async (id) => {
+    const db = await dbHelper.open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.delete(id);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  clear: async () => {
+    const db = await dbHelper.open();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.clear();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+};
+
+const resizeImage = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 320; 
+        const MAX_HEIGHT = 320;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+      };
+    };
+  });
+};
 
 // --- 資料結構與常數 ---
 const INITIAL_DATA = [
   { id: 'T01', name: 'WHITE T-SHIRT', category: 'TOPS', season: 'SUMMER', color: '#ffffff', image: '', labelImage: '', material: 'COTTON 100%', thickness: 'THIN', rating: 5, purchaseDate: '2023-06-15', source: 'UNIQLO', price: 390, note: 'ESSENTIAL BASIC.' },
   { id: 'B01', name: 'DENIM WIDE LEG', category: 'BOTTOMS', season: 'ALL', color: '#3b82f6', image: '', labelImage: '', material: 'COTTON 98% / SPANDEX 2%', thickness: 'MEDIUM', rating: 4, purchaseDate: 'unknown', source: 'GU', price: 590, note: '' },
-  { id: 'O01', name: 'TRENCH COAT', category: 'OUTER', season: 'AUTUMN', color: '#f5f5dc', image: '', labelImage: '', material: 'POLYESTER 100%', thickness: 'MEDIUM', rating: 5, purchaseDate: '2022-11-20', source: 'ONLINE', price: 1280, note: 'FOR WORK.' },
-  { id: 'S01', name: 'CLASSIC SNEAKERS', category: 'SHOES', season: 'ALL', color: '#ffffff', image: '', labelImage: '', material: 'LEATHER 100%', thickness: 'MEDIUM', rating: 3, purchaseDate: '2024-01-10', source: 'NIKE', price: 2500, note: 'GETTING DIRTY.' },
-  { id: 'B02', name: 'BLACK SLACKS', category: 'BOTTOMS', season: 'ALL', color: '#000000', image: '', labelImage: '', material: 'WOOL 60% / POLYESTER 40%', thickness: 'MEDIUM', rating: 4, purchaseDate: '2023-09-01', source: 'ZARA', price: 990, note: 'FORMAL EVENTS.' },
 ];
 
 const CATEGORY_CONFIG = [
@@ -349,7 +454,7 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 pb-28 hide-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
             <div className="flex justify-between items-end mb-2">
                 <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CAPACITY</h2>
                 <span className="text-[10px] text-gray-500">{count}/{maxItems}</span>
@@ -359,11 +464,12 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
             </div>
 
             <button 
+                // [v5.40] Slimmer ADD NEW button
                 onClick={() => { resetForm(activeCategory); setView('edit'); }}
-                className="w-full bg-black text-white py-4 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-800 transition mb-8 active:scale-[0.98] rounded-none"
+                className="w-full bg-black text-white py-2 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-800 transition mb-8 active:scale-[0.98] rounded-none"
             >
                 <Plus size={16} />
-                <span className="text-xs font-bold uppercase tracking-widest">ADD NEW</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">ADD NEW</span>
             </button>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-8">
@@ -387,7 +493,10 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
     );
 };
 
-const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, stats, openEdit }) => {
+const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, stats, openEdit, onExport, onImport }) => {
+    const [showStatsModal, setShowStatsModal] = useState(false);
+    const currentYear = new Date().getFullYear().toString();
+
     const isFiltering = searchQuery !== '' || ratingFilter !== 0 || colorFilter !== '';
 
     const filteredItems = items.filter(item => {
@@ -397,6 +506,15 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
         const matchRating = ratingFilter === 0 || item.rating === ratingFilter;
         const matchColor = colorFilter === '' || item.color === colorFilter;
         return matchSearch && matchRating && matchColor;
+    });
+
+    const currentYearExpense = stats.sortedExpenses.find(([year]) => year === currentYear)?.[1] || 0;
+    const topBrand = stats.sortedSources.length > 0 ? stats.sortedSources[0] : ['NONE', 0];
+
+    const last5YearsStats = stats.sortedExpenses.filter(([year]) => {
+        const y = parseInt(year);
+        const cur = new Date().getFullYear();
+        return y <= cur && y > cur - 5;
     });
 
     return (
@@ -451,40 +569,51 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 pb-28 hide-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
                 {!isFiltering ? (
-                    <div className="space-y-8 animate-fade-in">
-                        <div>
-                            <div className="flex items-center gap-2 mb-4">
-                                <TrendingUp size={16} />
-                                <h3 className="text-xs font-bold uppercase tracking-widest">Annual Expense</h3>
+                    <div className="space-y-4 animate-fade-in">
+                        {/* [v5.37] Compact ANNUAL REPORT Card (Vertical Stack) - Refined Sizing */}
+                        <div className="border border-black p-4 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 bg-black text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-widest">
+                                ANNUAL REPORT
                             </div>
-                            <div className="space-y-3">
-                                {stats.sortedExpenses.slice(0, 3).map(([year, total]) => (
-                                    <div key={year} className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                        <span className="text-sm font-bold">{year}</span>
-                                        <span className="text-sm text-gray-500 font-mono">NT${total.toLocaleString()}</span>
+                            
+                            <div className="mt-2 space-y-4">
+                                <div className="space-y-1">
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">{currentYear} TOTAL SPENT</span>
+                                    <div className="text-3xl font-serif font-bold tracking-tight">NT${currentYearExpense.toLocaleString()}</div>
+                                </div>
+                                
+                                <div className="space-y-1">
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">MOST LOVED BRAND</span>
+                                    <div className="flex items-baseline gap-3">
+                                        <div className="text-xl font-bold uppercase truncate">{topBrand[0]}</div>
+                                        <div className="text-[10px] bg-black text-white px-2 py-0.5 rounded-none whitespace-nowrap">{topBrand[1]} ITEMS</div>
                                     </div>
-                                ))}
-                                {stats.sortedExpenses.length === 0 && <div className="text-xs text-gray-300">No data available</div>}
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={() => setShowStatsModal(true)}
+                                className="w-full py-2 mt-3 border-t border-gray-100 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition"
+                            >
+                                VIEW DETAILS <ChevronRight size={12} />
+                            </button>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2">DATA MANAGEMENT</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button onClick={onExport} className="flex items-center justify-center gap-2 py-2 border border-black text-black text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition rounded-none">
+                                    <Download size={12} /> EXPORT
+                                </button>
+                                <label className="flex items-center justify-center gap-2 py-2 border border-black bg-black text-white text-[10px] font-bold uppercase tracking-widest hover:opacity-80 transition cursor-pointer rounded-none">
+                                    <Upload size={12} /> IMPORT
+                                    <input type="file" accept=".json" onChange={onImport} className="hidden" />
+                                </label>
                             </div>
                         </div>
 
-                        <div>
-                            <div className="flex items-center gap-2 mb-4">
-                                <Store size={16} />
-                                <h3 className="text-xs font-bold uppercase tracking-widest">Top Brands</h3>
-                            </div>
-                            <div className="space-y-3">
-                                {stats.sortedSources.slice(0, 3).map(([name, count]) => (
-                                    <div key={name} className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                        <span className="text-sm font-bold">{name}</span>
-                                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{count} ITEMS</span>
-                                    </div>
-                                ))}
-                                {stats.sortedSources.length === 0 && <div className="text-xs text-gray-300">No data available</div>}
-                            </div>
-                        </div>
                     </div>
                 ) : (
                     <>
@@ -512,6 +641,57 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                     </>
                 )}
             </div>
+
+            {showStatsModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-6 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-sm h-[85vh] sm:h-auto sm:max-h-[80vh] flex flex-col shadow-2xl modal-slide-up">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <BarChart3 size={20} />
+                                <h3 className="font-serif text-xl font-bold uppercase tracking-wide">STATISTICS</h3>
+                            </div>
+                            <button onClick={() => setShowStatsModal(false)}><X size={24} /></button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 font-mono">
+                            <div>
+                                <h4 className="text-xs font-bold uppercase tracking-widest mb-4 text-gray-400">LAST 5 YEARS EXPENSE</h4>
+                                <div className="space-y-3">
+                                    {last5YearsStats.map(([year, total]) => (
+                                        <div key={year} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                                            <span className="text-sm font-bold">{year}</span>
+                                            <span className="text-sm text-gray-600">NT${total.toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                    {last5YearsStats.length === 0 && <div className="text-xs text-gray-300 text-center py-4">NO DATA AVAILABLE</div>}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="text-xs font-bold uppercase tracking-widest mb-4 text-gray-400">TOP 5 BRANDS</h4>
+                                <div className="space-y-3">
+                                    {stats.sortedSources.slice(0, 5).map(([name, count], index) => (
+                                        <div key={name} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-bold text-gray-300 w-4">{index + 1}</span>
+                                                <span className="text-sm font-bold">{name}</span>
+                                            </div>
+                                            <span className="text-xs bg-black text-white px-2 py-0.5 rounded-none">{count} ITEMS</span>
+                                        </div>
+                                    ))}
+                                    {stats.sortedSources.length === 0 && <div className="text-xs text-gray-300 text-center py-4">NO DATA AVAILABLE</div>}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="p-4 border-t border-gray-100 pb-safe">
+                            <button onClick={() => setShowStatsModal(false)} className="w-full py-4 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-900 rounded-none">
+                                CLOSE
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -532,30 +712,58 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                             const isWeather = WEATHER_TAGS.includes(tag);
                             const target = isWeather ? 'weather' : 'sensation';
                             setCustomConditions({...customConditions, [target]: customConditions[target] === tag ? '' : tag});
-                        }} className={`px-3 py-1.5 text-[10px] uppercase border rounded-none ${customConditions.weather === tag || customConditions.sensation === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{tag}</button>
+                        }} className={`px-3 py-1 text-[10px] uppercase border rounded-none ${customConditions.weather === tag || customConditions.sensation === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{tag}</button>
                     ))}
                 </div>
             </div>
 
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CONTEXT</label>
-                <div className="flex flex-wrap gap-2">
-                    {[...ENVIRONMENT_OPTIONS, ...ACTIVITY_OPTIONS, ...PURPOSE_TAGS].map(tag => (
-                        <button key={tag} onClick={() => {
-                            let target = 'purpose';
-                            if (ENVIRONMENT_OPTIONS.includes(tag)) target = 'environment';
-                            else if (ACTIVITY_OPTIONS.includes(tag)) target = 'activity';
-                            setCustomConditions({...customConditions, [target]: customConditions[target] === tag ? '' : tag});
-                        }} className={`px-3 py-1.5 text-[10px] uppercase border rounded-none ${[customConditions.environment, customConditions.activity, customConditions.purpose].includes(tag) ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{tag}</button>
-                    ))}
+                <div className="space-y-2">
+                    {/* [v5.39] Grouping Opposing Tags */}
+                    <div className="flex gap-2">
+                        {['INDOOR', 'OUTDOOR'].map(tag => (
+                            <button 
+                                key={tag} 
+                                onClick={() => setCustomConditions({...customConditions, environment: customConditions.environment === tag ? '' : tag})}
+                                className={`flex-1 py-1 text-[10px] uppercase border rounded-none ${customConditions.environment === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                        {['ACTIVE', 'STATIC'].map(tag => (
+                             <button 
+                                key={tag} 
+                                onClick={() => setCustomConditions({...customConditions, activity: customConditions.activity === tag ? '' : tag})}
+                                className={`flex-1 py-1 text-[10px] uppercase border rounded-none ${customConditions.activity === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {PURPOSE_TAGS.map(tag => (
+                            <button 
+                                key={tag} 
+                                onClick={() => setCustomConditions({...customConditions, purpose: customConditions.purpose === tag ? '' : tag})}
+                                className={`px-3 py-1 text-[10px] uppercase border rounded-none ${customConditions.purpose === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">TARGET (SELECT ONE)</label>
-                <div className={`grid grid-cols-7 gap-2 transition-opacity ${customConditions.targetId ? 'opacity-30 pointer-events-none' : ''}`}>
+                <div className={`flex flex-wrap gap-2 transition-opacity ${customConditions.targetId ? 'opacity-30 pointer-events-none' : ''}`}>
                     {COLOR_PALETTE.map(c => (
-                        <button key={c.name} onClick={() => setCustomConditions(prev => ({...prev, targetColor: prev.targetColor === c.value ? '' : c.value, targetId: ''}))} className={`w-full aspect-square rounded-sm border ${customConditions.targetColor === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-100'}`} style={{backgroundColor: c.value}} />
+                        <button key={c.name} onClick={() => setCustomConditions(prev => ({...prev, targetColor: prev.targetColor === c.value ? '' : c.value, targetId: ''}))} className={`w-8 h-8 aspect-square rounded-sm border ${customConditions.targetColor === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-100'}`} style={{backgroundColor: c.value}} />
                     ))}
                 </div>
                 <div className={`pt-2 transition-opacity ${customConditions.targetColor ? 'opacity-30' : ''}`}>
@@ -579,7 +787,8 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
     return (
         <div className="h-full flex flex-col font-mono animate-fade-in relative">
             <Header />
-            <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
+            {/* [v5.40] Increased bottom padding to prevent button overlap */}
+            <div className="flex-1 overflow-y-auto p-6 pb-48 hide-scrollbar">
                 <div className="flex border-b border-gray-100 mb-4">
                     <button onClick={() => {setOutfitTab('random'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition rounded-none ${outfitTab === 'random' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>RANDOM</button>
                     <button onClick={() => {setOutfitTab('custom'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition rounded-none ${outfitTab === 'custom' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>CONDITIONS</button>
@@ -588,8 +797,12 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                 {outfitTab === 'random' && !generatedOutfit && <div className="text-center py-20 text-gray-300"><Sparkles size={48} className="mx-auto mb-4 opacity-50 stroke-1"/>GET INSPIRED</div>}
                 {generatedOutfit && renderResult()}
             </div>
-            <div className="absolute bottom-24 left-6 right-6 z-20 pb-safe">
-                <button onClick={generateOutfit} className="w-full bg-black text-white py-4 text-xs font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 rounded-none">
+            <div className="absolute bottom-28 left-6 right-6 z-20">
+                <button 
+                    onClick={generateOutfit} 
+                    // [v5.40] Slimmer button: py-2
+                    className="w-full bg-black text-white py-2 text-[10px] font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 rounded-none"
+                >
                     <RefreshCw size={16} /> {generatedOutfit ? 'REGENERATE' : 'GENERATE OUTFIT'}
                 </button>
             </div>
@@ -604,7 +817,7 @@ const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShop
             <div className="border border-gray-200 p-8 text-center space-y-4 rounded-none">
                 <h3 className="font-serif text-xl uppercase">SHOPPING ASSISTANT</h3>
                 <p className="text-xs text-gray-400 leading-relaxed uppercase">UPLOAD A PHOTO OF THE ITEM YOU WANT TO BUY. AI WILL ANALYZE YOUR CURRENT WARDROBE TO PREVENT DUPLICATES.</p>
-                <label className="block w-full py-4 bg-black text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:opacity-90 rounded-none">
+                <label className="block w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:opacity-90 rounded-none">
                     UPLOAD PHOTO
                     <input type="file" className="hidden" onChange={(e) => {
                         if(e.target.files[0]) {
@@ -630,8 +843,6 @@ const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShop
 
 export default function App() {
   return (
-    // [v5.27] 使用 h-[100dvh] (動態視窗高度) 搭配 overflow-hidden 來解決手機滑動問題
-    // 同時保留 Canvas 預覽能力 (外層不使用 fixed)
     <div className="bg-white h-[100dvh] w-full flex justify-center text-black selection:bg-gray-200 overflow-hidden">
       <GlobalStyles />
       <div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
@@ -685,8 +896,76 @@ const AppContent = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem('wardrobe_items_v5', JSON.stringify(items));
-    }, [items]);
+      const initData = async () => {
+        try {
+          const dbItems = await dbHelper.getAll();
+          if (dbItems && dbItems.length > 0) {
+            setItems(dbItems);
+          } else {
+            const localItems = localStorage.getItem('wardrobe_items_v5');
+            if (localItems) {
+              const parsedItems = JSON.parse(localItems);
+              if (parsedItems.length > 0) {
+                console.log("Migrating data to IndexedDB...");
+                for (const item of parsedItems) {
+                  await dbHelper.save(item);
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error("DB Init Failed:", err);
+        }
+      };
+      initData();
+    }, []);
+
+    const handleExportData = async () => {
+        try {
+            const allItems = await dbHelper.getAll();
+            const dataStr = JSON.stringify(allItems);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const date = new Date().toISOString().split('T')[0];
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `my-closet-backup-${date}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            alert("備份失敗");
+        }
+    };
+
+    const handleImportData = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!window.confirm("警告：這將會清空目前的衣櫃資料並還原備份，確定要繼續嗎？")) {
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (Array.isArray(data)) {
+                    await dbHelper.clear();
+                    for (const item of data) {
+                        await dbHelper.save(item);
+                    }
+                    setItems(data);
+                    alert("還原成功！");
+                } else {
+                    alert("無效的備份檔案格式");
+                }
+            } catch (error) {
+                alert("還原失敗，檔案可能損毀");
+            }
+        };
+        reader.readAsText(file);
+    };
 
     const resetForm = (categoryOverride = null) => {
         setFormData({
@@ -701,20 +980,16 @@ const AppContent = () => {
     const generateId = (categoryFull) => {
         const catConfig = CATEGORY_CONFIG.find(c => c.full === categoryFull);
         const code = catConfig ? catConfig.code : 'X';
-        
-        // [v5.25] 自動掃描並遞增 ID
         const existingIds = items
             .filter(i => i.id.startsWith(code))
             .map(i => parseInt(i.id.substring(1)))
             .filter(n => !isNaN(n));
-        
         const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
         const nextId = maxId + 1;
-        
         return `${code}${nextId.toString().padStart(2, '0')}`;
     };
 
-    const handleSaveItem = (e) => {
+    const handleSaveItem = async (e) => {
         e.preventDefault();
         
         const newId = editingItem ? editingItem.id : generateId(formData.category);
@@ -734,42 +1009,49 @@ const AppContent = () => {
                 return [newItemData, ...prevItems];
             }
         });
-        
+
+        try {
+          await dbHelper.save(newItemData);
+        } catch (err) {
+          alert("儲存失敗！");
+        }
         setView('wardrobe');
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm('DELETE THIS ITEM?')) {
             setItems(items.filter(item => item.id !== id));
+            await dbHelper.delete(id);
             setView('wardrobe');
         }
     };
 
-    const handleImageUpload = (e, field) => {
+    const handleImageUpload = async (e, field) => {
         const file = e.target.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const imgData = reader.result;
-                setFormData(prev => ({ ...prev, [field]: imgData }));
+            try {
+                setIsAiLoading(true); 
+                const resizedImage = await resizeImage(file);
+                setFormData(prev => ({ ...prev, [field]: resizedImage }));
                 
                 if (!formData.name) { 
-                    setIsAiLoading(true);
                     setTimeout(() => {
                         const randomColor = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)].value;
                         const randomMaterial = MATERIALS_MOCK[Math.floor(Math.random() * MATERIALS_MOCK.length)];
-                        
                         if (field === 'labelImage') {
                             setFormData(prev => ({ ...prev, material: randomMaterial }));
                         } else {
                             setFormData(prev => ({ ...prev, color: randomColor }));
                         }
-                        
                         setIsAiLoading(false);
                     }, 800);
+                } else {
+                    setIsAiLoading(false);
                 }
-            };
-            reader.readAsDataURL(file);
+            } catch (error) {
+                alert("圖片處理失敗");
+                setIsAiLoading(false);
+            }
         }
     };
 
@@ -889,6 +1171,8 @@ const AppContent = () => {
                                 setColorFilter={setColorFilter} 
                                 stats={statsData} 
                                 openEdit={openEdit}
+                                onExport={handleExportData}
+                                onImport={handleImportData}
                             />
                         }
                         {view === 'outfit' && 
