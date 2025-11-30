@@ -7,20 +7,30 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.15';
+const APP_VERSION = 'v5.16';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap');
     
-    /* 強制鎖定視窗，防止 iOS 橡皮筋效果與整體頁面滑動 */
-    html, body, #root {
-      height: 100%;
+    /* [v5.16 修正] 改用更兼容的方式鎖定視窗，恢復 Canvas 預覽功能 */
+    html, body {
+      margin: 0;
+      padding: 0;
       width: 100%;
-      overflow: hidden;
-      overscroll-behavior: none;
-      position: fixed;
+      height: 100%;
+      overflow: hidden; /* 禁止瀏覽器本身的捲動 */
+      overscroll-behavior: none; /* 禁止 iOS 彈性拉動 */
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    #root {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      background-color: #ffffff;
     }
 
     .font-serif {
@@ -609,8 +619,10 @@ const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShop
 
 export default function App() {
   return (
+    // 外層容器：鎖定高度為 100dvh (手機動態高度)，隱藏溢出
     <div className="bg-white h-[100dvh] w-full flex justify-center text-black selection:bg-gray-200 overflow-hidden">
       <GlobalStyles />
+      {/* 內層 App 容器：高度 100%，使用 flex-col 排版 */}
       <div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
         
         <AppContent />
@@ -742,8 +754,7 @@ const AppContent = () => {
                     if (t.category === 'OUTER') picks.outer = t;
                 }
             } else if (customConditions.targetColor) {
-                // 修改邏輯：改為精確比對
-                const matches = pool.filter(i => i.color === customConditions.targetColor);
+                const matches = pool.filter(i => isColorSimilar(i.color, customConditions.targetColor));
                 if(matches.length > 0) {
                     const m = matches[Math.floor(Math.random()*matches.length)];
                     if(m.category === 'TOPS' && !picks.top) picks.top = m;
