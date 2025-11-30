@@ -297,10 +297,10 @@ export default function App() {
   // --- Components ---
 
   const Header = ({ rightAction }) => (
-      <div className="bg-white px-6 py-5 flex justify-between items-center sticky top-0 z-40 bg-opacity-95 backdrop-blur-sm border-b border-gray-50">
-          <div>
+      <div className="bg-white px-6 py-6 flex justify-between items-end sticky top-0 z-40 bg-opacity-95 backdrop-blur-sm border-b border-gray-50 shadow-sm transition-all duration-300">
+          <div className="flex items-baseline gap-3">
               <h1 className="text-3xl tracking-tighter font-serif font-bold text-black uppercase leading-none">MY WALK-IN CLOSET</h1>
-              <span className="text-[10px] text-gray-400 font-mono tracking-widest block mt-1">{APP_VERSION}</span>
+              <span className="text-[10px] text-gray-400 font-mono tracking-widest">{APP_VERSION}</span>
           </div>
           {rightAction}
       </div>
@@ -316,7 +316,7 @@ export default function App() {
       <div className="pb-28 animate-fade-in min-h-full flex flex-col font-mono">
         <Header />
 
-        <div className="bg-white sticky top-[76px] z-30 border-b border-gray-100">
+        <div className="bg-white sticky top-[84px] z-30 border-b border-gray-100">
             <div className="flex w-full">
                 {CATEGORY_CONFIG.map(cat => (
                     <button 
@@ -552,7 +552,7 @@ export default function App() {
           <div className="pb-24 animate-fade-in min-h-full font-mono">
               <Header />
               
-              <div className="p-6 sticky top-[76px] bg-white z-30 border-b border-gray-50 space-y-4">
+              <div className="p-6 sticky top-[84px] bg-white z-30 border-b border-gray-50 space-y-4">
                   <div className="bg-gray-50 flex items-center px-4 py-3">
                       <Search size={16} className="text-gray-400 mr-3"/>
                       <input 
