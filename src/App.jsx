@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.45';
+const APP_VERSION = 'v5.47';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
@@ -51,9 +51,9 @@ const GlobalStyles = () => (
       }
     }
 
-    /* [v5.35] 底部安全區域 */
+    /* [v5.47] 底部安全區域再增高：env + 2rem (約 32px) */
     .pb-safe {
-      padding-bottom: calc(env(safe-area-inset-bottom) + 1.25rem);
+      padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);
     }
     
     .pt-safe-header {
@@ -187,7 +187,6 @@ const MATERIALS_LIST = [
     'COTTON', 'POLYESTER', 'WOOL', 'LINEN', 'SILK', 'LEATHER', 
     'DENIM', 'NYLON', 'SPANDEX', 'RAYON', 'ACRYLIC', 'CASHMERE', 'OTHER'
 ];
-// 舊的 mock data 保留給範例
 const MATERIALS_MOCK = [
     'COTTON 100%', 'COTTON 60% / POLYESTER 40%', 'WOOL 100%', 'COTTON 98% / SPANDEX 2%', 'LINEN 55% / COTTON 45%', 'POLYESTER 100%', 'LEATHER 100%', 'NYLON 80% / SPANDEX 20%'
 ];
@@ -522,7 +521,7 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
     );
 };
 
-const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, materialFilter, setMaterialFilter, brandFilter, setBrandFilter, stats, openEdit, onExport, onImport }) => {
+const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, stats, openEdit, onExport, onImport, materialFilter, setMaterialFilter, brandFilter, setBrandFilter }) => {
     const [showStatsModal, setShowStatsModal] = useState(false);
     const currentYear = new Date().getFullYear().toString();
 
@@ -566,9 +565,10 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
 
                 <div className="space-y-4">
-                    {/* [v5.45] Order: 1. Color, 2. Rating */}
+                    {/* [v5.47] Organize Page - Layout Fix: Annual Report FIXED at top (if not filtering) */}
+                    {/* Logic: The entire filter section is scrollable in the body if needed, but Annual Report is separated */}
                     
-                    {/* 1. Color Filter */}
+                    {/* Filter Section */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -588,7 +588,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
                     </div>
 
-                    {/* 2. Rating Filter (Restructured to match other filters) */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RATING</span>
@@ -607,7 +606,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
                     </div>
 
-                    {/* 3. Material Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -628,7 +626,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
                     </div>
 
-                    {/* 4. Brand Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -648,23 +645,18 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                              ))}
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
-                {!isFiltering ? (
-                    <div className="space-y-4 animate-fade-in">
+                    {/* [v5.47] Fixed Annual Report: Only show here if NOT filtering */}
+                    {!isFiltering && (
                         <div className="border border-black p-4 relative overflow-hidden">
                             <div className="absolute top-0 right-0 bg-black text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-widest">
                                 ANNUAL REPORT
                             </div>
-                            
                             <div className="mt-2 space-y-4">
                                 <div className="space-y-1">
                                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">{currentYear} TOTAL SPENT</span>
                                     <div className="text-3xl font-serif font-bold tracking-tight">NT${currentYearExpense.toLocaleString()}</div>
                                 </div>
-                                
                                 <div className="space-y-1">
                                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">MOST LOVED BRAND</span>
                                     <div className="flex items-baseline gap-3">
@@ -673,7 +665,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                     </div>
                                 </div>
                             </div>
-
                             <button 
                                 onClick={() => setShowStatsModal(true)}
                                 className="w-full py-2 mt-3 border-t border-gray-100 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition"
@@ -681,7 +672,15 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 VIEW DETAILS <ChevronRight size={12} />
                             </button>
                         </div>
+                    )}
 
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
+                {!isFiltering ? (
+                    // [v5.47] Only Data Management scrolls now
+                    <div className="space-y-4 animate-fade-in">
                         <div className="pt-2 border-t border-gray-100">
                             <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2">DATA MANAGEMENT</h3>
                             <div className="grid grid-cols-2 gap-3">
@@ -694,7 +693,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 </label>
                             </div>
                         </div>
-
                     </div>
                 ) : (
                     <>
@@ -783,45 +781,43 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
                 
-                {/* [v5.45] Split Temp / Weather / Sensation into Dropdowns */}
                 <div className="grid grid-cols-1 gap-4">
-                    {/* Row 1: Temp */}
                     <div className="relative">
                         <select 
-                            className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                            // [v5.47] Search bar height reduced to py-2 for consistency
+                            className="w-full border-b border-gray-200 py-2 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
                             value={customConditions.tempRange}
                             onChange={e => setCustomConditions({...customConditions, tempRange: e.target.value})}
                         >
                             <option value="">TEMP RANGE</option>
                             {TEMP_RANGES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                         </select>
-                        <div className="absolute right-0 top-1 pointer-events-none text-gray-400"><ChevronDown size={12}/></div>
+                        <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
                     </div>
 
-                    {/* Row 2: Weather & Sensation */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="relative">
                             <select 
-                                className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                                className="w-full border-b border-gray-200 py-2 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
                                 value={customConditions.weather || ''}
                                 onChange={e => setCustomConditions({...customConditions, weather: e.target.value})}
                             >
                                 <option value="">WEATHER</option>
                                 {WEATHER_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                             </select>
-                            <div className="absolute right-0 top-1 pointer-events-none text-gray-400"><ChevronDown size={12}/></div>
+                            <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
                         </div>
 
                         <div className="relative">
                             <select 
-                                className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                                className="w-full border-b border-gray-200 py-2 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
                                 value={customConditions.sensation || ''}
                                 onChange={e => setCustomConditions({...customConditions, sensation: e.target.value})}
                             >
                                 <option value="">SENSATION</option>
                                 {SENSATION_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                             </select>
-                            <div className="absolute right-0 top-1 pointer-events-none text-gray-400"><ChevronDown size={12}/></div>
+                            <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
                         </div>
                     </div>
                 </div>
@@ -854,7 +850,6 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
                         ))}
                     </div>
 
-                    {/* Purpose Buttons: 4-col Grid */}
                     <div className="grid grid-cols-4 gap-2">
                         {PURPOSE_TAGS.map(tag => (
                             <button 
@@ -1129,6 +1124,10 @@ const AppContent = () => {
         setView('wardrobe');
     };
 
+    const handleRemoveImage = (field) => {
+        setFormData(prev => ({ ...prev, [field]: '' }));
+    };
+
     const handleDelete = async (id) => {
         if (window.confirm('DELETE THIS ITEM?')) {
             setItems(items.filter(item => item.id !== id));
@@ -1243,11 +1242,6 @@ const AppContent = () => {
         return { sortedExpenses, sortedSources };
     }, [items]);
 
-    // [v5.42] Pass handleRemoveImage
-    const handleRemoveImage = (field) => {
-        setFormData(prev => ({ ...prev, [field]: '' }));
-    };
-
     return (
         <>
             {view === 'edit' && 
@@ -1257,6 +1251,7 @@ const AppContent = () => {
                     handleSaveItem={handleSaveItem} 
                     handleDelete={handleDelete} 
                     handleImageUpload={handleImageUpload} 
+                    // [v5.42] Pass handleRemoveImage
                     handleRemoveImage={handleRemoveImage}
                     editingItem={editingItem} 
                     isAiLoading={isAiLoading} 
