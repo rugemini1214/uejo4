@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.41';
+const APP_VERSION = 'v5.45';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
@@ -183,6 +183,11 @@ const CATEGORY_CONFIG = [
 ];
 
 const THICKNESS_OPTIONS = ['THIN', 'MEDIUM', 'THICK', 'WARM'];
+const MATERIALS_LIST = [
+    'COTTON', 'POLYESTER', 'WOOL', 'LINEN', 'SILK', 'LEATHER', 
+    'DENIM', 'NYLON', 'SPANDEX', 'RAYON', 'ACRYLIC', 'CASHMERE', 'OTHER'
+];
+// 舊的 mock data 保留給範例
 const MATERIALS_MOCK = [
     'COTTON 100%', 'COTTON 60% / POLYESTER 40%', 'WOOL 100%', 'COTTON 98% / SPANDEX 2%', 'LINEN 55% / COTTON 45%', 'POLYESTER 100%', 'LEATHER 100%', 'NYLON 80% / SPANDEX 20%'
 ];
@@ -262,17 +267,26 @@ const MaterialEditor = ({ materialString, onChange }) => {
 
     return (
         <div className="space-y-2">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">MATERIAL (AI)</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">MATERIAL</label>
             <div className="space-y-2">
                 {rows.map((row, i) => (
                     <div key={i} className="flex gap-2 items-center">
-                        <input 
-                            type="text" 
-                            className="flex-1 border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none placeholder-gray-300 uppercase rounded-none"
-                            placeholder="COTTON"
-                            value={row.name}
-                            onChange={(e) => updateRow(i, 'name', e.target.value)}
-                        />
+                        <div className="flex-1 relative">
+                            <select
+                                className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
+                                value={row.name}
+                                onChange={(e) => updateRow(i, 'name', e.target.value)}
+                            >
+                                <option value="" disabled>SELECT MATERIAL</option>
+                                {MATERIALS_LIST.map(m => (
+                                    <option key={m} value={m}>{m}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
+                                <ChevronDown size={14} />
+                            </div>
+                        </div>
+                        
                         <div className="flex items-center w-20 border-b border-gray-200">
                             <input 
                                 type="number" 
@@ -296,7 +310,7 @@ const MaterialEditor = ({ materialString, onChange }) => {
     );
 };
 
-const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleImageUpload, editingItem, isAiLoading, setView }) => (
+const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleImageUpload, handleRemoveImage, editingItem, isAiLoading, setView }) => (
     <div className="bg-white h-full flex flex-col font-mono animate-fade-in">
         <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center sticky top-0 bg-white z-40 pt-safe-header">
             <button onClick={() => setView('wardrobe')}><X size={24} className="text-black"/></button>
@@ -308,7 +322,15 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
             <div className="flex gap-4 h-64">
                 <div className="flex-1 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-gray-100 group rounded-none">
                     {formData.image ? (
-                        <img src={formData.image} className="w-full h-full object-cover" alt="Main" />
+                        <>
+                            <img src={formData.image} className="w-full h-full object-cover" alt="Main" />
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handleRemoveImage('image'); }}
+                                className="absolute top-2 right-2 bg-white/80 p-1 rounded-full shadow-sm z-10 hover:bg-white"
+                            >
+                                <X size={16} className="text-black" />
+                            </button>
+                        </>
                     ) : (
                         <div className="text-center">
                             <Camera size={24} className="mx-auto mb-2 text-gray-300"/>
@@ -320,7 +342,15 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
 
                 <div className="w-1/3 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-dashed border-gray-200 hover:border-black transition group rounded-none">
                     {formData.labelImage ? (
-                        <img src={formData.labelImage} className="w-full h-full object-cover" alt="Label" />
+                        <>
+                            <img src={formData.labelImage} className="w-full h-full object-cover" alt="Label" />
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handleRemoveImage('labelImage'); }}
+                                className="absolute top-2 right-2 bg-white/80 p-1 rounded-full shadow-sm z-10 hover:bg-white"
+                            >
+                                <X size={12} className="text-black" />
+                            </button>
+                        </>
                     ) : (
                         <div className="text-center p-2">
                             <Tag size={20} className="mx-auto mb-2 text-gray-300"/>
@@ -346,7 +376,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
 
                 <div className="grid grid-cols-1 gap-6">
                     <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">COLOR (AI)</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">COLOR</label>
                         <div className="flex flex-wrap gap-2">
                             {COLOR_PALETTE.map(c => (
                                 <button 
@@ -464,7 +494,6 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
             </div>
 
             <button 
-                // [v5.40] Slimmer ADD NEW button
                 onClick={() => { resetForm(activeCategory); setView('edit'); }}
                 className="w-full bg-black text-white py-2 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-800 transition mb-8 active:scale-[0.98] rounded-none"
             >
@@ -493,11 +522,11 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
     );
 };
 
-const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, stats, openEdit, onExport, onImport }) => {
+const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, materialFilter, setMaterialFilter, brandFilter, setBrandFilter, stats, openEdit, onExport, onImport }) => {
     const [showStatsModal, setShowStatsModal] = useState(false);
     const currentYear = new Date().getFullYear().toString();
 
-    const isFiltering = searchQuery !== '' || ratingFilter !== 0 || colorFilter !== '';
+    const isFiltering = searchQuery !== '' || ratingFilter !== 0 || colorFilter !== '' || materialFilter !== '' || brandFilter !== '';
 
     const filteredItems = items.filter(item => {
         const matchSearch = searchQuery === '' || 
@@ -505,7 +534,9 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
             item.source?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchRating = ratingFilter === 0 || item.rating === ratingFilter;
         const matchColor = colorFilter === '' || item.color === colorFilter;
-        return matchSearch && matchRating && matchColor;
+        const matchMaterial = materialFilter === '' || (item.material && item.material.includes(materialFilter));
+        const matchBrand = brandFilter === '' || (item.source && item.source === brandFilter);
+        return matchSearch && matchRating && matchColor && matchMaterial && matchBrand;
     });
 
     const currentYearExpense = stats.sortedExpenses.find(([year]) => year === currentYear)?.[1] || 0;
@@ -535,14 +566,40 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
 
                 <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RATING</span>
+                    {/* [v5.45] Order: 1. Color, 2. Rating */}
+                    
+                    {/* 1. Color Filter */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                COLOR
+                                {colorFilter && <button onClick={() => setColorFilter('')} className="text-black text-[9px] underline uppercase">CLEAR</button>}
+                            </span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto hide-scrollbar w-full pb-1">
+                            {COLOR_PALETTE.map(c => (
+                                <button 
+                                  key={c.name}
+                                  onClick={() => setColorFilter(colorFilter === c.value ? '' : c.value)}
+                                  className={`w-6 h-6 rounded-sm border flex-shrink-0 ${colorFilter === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-200'}`}
+                                  style={{backgroundColor: c.value}}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 2. Rating Filter (Restructured to match other filters) */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RATING</span>
+                            {ratingFilter !== 0 && <button onClick={() => setRatingFilter(0)} className="text-black text-[9px] underline uppercase">CLEAR</button>}
+                        </div>
                         <div className="flex gap-2">
                             {[1,2,3,4,5].map(r => (
                                 <button 
                                   key={r} 
                                   onClick={() => setRatingFilter(ratingFilter === r ? 0 : r)}
-                                  className={`w-7 h-7 flex items-center justify-center text-[10px] border transition rounded-none ${ratingFilter===r ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-400 hover:border-gray-400'}`}
+                                  className={`flex-1 py-1 text-[10px] border transition rounded-none ${ratingFilter===r ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-400 hover:border-gray-400'}`}
                                 >
                                   {r}
                                 </button>
@@ -550,20 +607,45 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
                     </div>
 
-                    <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                            COLOR
-                            {colorFilter && <button onClick={() => setColorFilter('')} className="text-black text-[9px] underline uppercase">CLEAR</button>}
-                        </span>
-                        <div className="flex gap-2 overflow-x-auto hide-scrollbar w-full justify-end">
-                            {COLOR_PALETTE.map(c => (
+                    {/* 3. Material Filter */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                MATERIAL
+                                {materialFilter && <button onClick={() => setMaterialFilter('')} className="text-black text-[9px] underline uppercase">CLEAR</button>}
+                            </span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                             {MATERIALS_LIST.map(m => (
                                 <button 
-                                  key={c.name}
-                                  onClick={() => setColorFilter(colorFilter === c.value ? '' : c.value)}
-                                  className={`w-5 h-5 rounded-sm border flex-shrink-0 ${colorFilter === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-200'}`}
-                                  style={{backgroundColor: c.value}}
-                                />
-                            ))}
+                                    key={m}
+                                    onClick={() => setMaterialFilter(materialFilter === m ? '' : m)}
+                                    className={`px-3 py-1 text-[9px] border uppercase whitespace-nowrap rounded-none ${materialFilter === m ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                                >
+                                    {m}
+                                </button>
+                             ))}
+                        </div>
+                    </div>
+
+                    {/* 4. Brand Filter */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                BRAND (TOP 5)
+                                {brandFilter && <button onClick={() => setBrandFilter('')} className="text-black text-[9px] underline uppercase">CLEAR</button>}
+                            </span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                             {stats.sortedSources.slice(0, 5).map(([name, count]) => (
+                                <button 
+                                    key={name}
+                                    onClick={() => setBrandFilter(brandFilter === name ? '' : name)}
+                                    className={`px-3 py-1 text-[9px] border uppercase whitespace-nowrap rounded-none ${brandFilter === name ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                                >
+                                    {name} ({count})
+                                </button>
+                             ))}
                         </div>
                     </div>
                 </div>
@@ -572,7 +654,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
             <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
                 {!isFiltering ? (
                     <div className="space-y-4 animate-fade-in">
-                        {/* [v5.37] Compact ANNUAL REPORT Card (Vertical Stack) - Refined Sizing */}
                         <div className="border border-black p-4 relative overflow-hidden">
                             <div className="absolute top-0 right-0 bg-black text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-widest">
                                 ANNUAL REPORT
@@ -698,59 +779,88 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
 
 const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomConditions, generatedOutfit, setGeneratedOutfit, generateOutfit, isColorSimilar }) => {
     const renderConditions = () => (
-        <div className="space-y-4">
+        <div className="space-y-8">
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
-                <div className="grid grid-cols-4 gap-2">
-                    {TEMP_RANGES.map(t => (
-                        <button key={t.value} onClick={() => setCustomConditions({...customConditions, tempRange: customConditions.tempRange === t.value ? '' : t.value})} className={`py-2 text-[10px] border uppercase rounded-none ${customConditions.tempRange === t.value ? 'bg-black text-white border-black' : 'border-gray-200'}`}>{t.label}</button>
-                    ))}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {[...WEATHER_TAGS, ...SENSATION_TAGS].map(tag => (
-                        <button key={tag} onClick={() => {
-                            const isWeather = WEATHER_TAGS.includes(tag);
-                            const target = isWeather ? 'weather' : 'sensation';
-                            setCustomConditions({...customConditions, [target]: customConditions[target] === tag ? '' : tag});
-                        }} className={`px-3 py-1 text-[10px] uppercase border rounded-none ${customConditions.weather === tag || customConditions.sensation === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>{tag}</button>
-                    ))}
+                
+                {/* [v5.45] Split Temp / Weather / Sensation into Dropdowns */}
+                <div className="grid grid-cols-1 gap-4">
+                    {/* Row 1: Temp */}
+                    <div className="relative">
+                        <select 
+                            className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                            value={customConditions.tempRange}
+                            onChange={e => setCustomConditions({...customConditions, tempRange: e.target.value})}
+                        >
+                            <option value="">TEMP RANGE</option>
+                            {TEMP_RANGES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select>
+                        <div className="absolute right-0 top-1 pointer-events-none text-gray-400"><ChevronDown size={12}/></div>
+                    </div>
+
+                    {/* Row 2: Weather & Sensation */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="relative">
+                            <select 
+                                className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                                value={customConditions.weather || ''}
+                                onChange={e => setCustomConditions({...customConditions, weather: e.target.value})}
+                            >
+                                <option value="">WEATHER</option>
+                                {WEATHER_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                            </select>
+                            <div className="absolute right-0 top-1 pointer-events-none text-gray-400"><ChevronDown size={12}/></div>
+                        </div>
+
+                        <div className="relative">
+                            <select 
+                                className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                                value={customConditions.sensation || ''}
+                                onChange={e => setCustomConditions({...customConditions, sensation: e.target.value})}
+                            >
+                                <option value="">SENSATION</option>
+                                {SENSATION_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                            </select>
+                            <div className="absolute right-0 top-1 pointer-events-none text-gray-400"><ChevronDown size={12}/></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CONTEXT</label>
                 <div className="space-y-2">
-                    {/* [v5.39] Grouping Opposing Tags */}
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                         {['INDOOR', 'OUTDOOR'].map(tag => (
                             <button 
                                 key={tag} 
                                 onClick={() => setCustomConditions({...customConditions, environment: customConditions.environment === tag ? '' : tag})}
-                                className={`flex-1 py-1 text-[10px] uppercase border rounded-none ${customConditions.environment === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                                className={`w-full py-1 text-[10px] uppercase border rounded-none ${customConditions.environment === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
                             >
                                 {tag}
                             </button>
                         ))}
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                         {['ACTIVE', 'STATIC'].map(tag => (
                              <button 
                                 key={tag} 
                                 onClick={() => setCustomConditions({...customConditions, activity: customConditions.activity === tag ? '' : tag})}
-                                className={`flex-1 py-1 text-[10px] uppercase border rounded-none ${customConditions.activity === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                                className={`w-full py-1 text-[10px] uppercase border rounded-none ${customConditions.activity === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
                             >
                                 {tag}
                             </button>
                         ))}
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    {/* Purpose Buttons: 4-col Grid */}
+                    <div className="grid grid-cols-4 gap-2">
                         {PURPOSE_TAGS.map(tag => (
                             <button 
                                 key={tag} 
                                 onClick={() => setCustomConditions({...customConditions, purpose: customConditions.purpose === tag ? '' : tag})}
-                                className={`px-3 py-1 text-[10px] uppercase border rounded-none ${customConditions.purpose === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                                className={`w-full py-1 text-[10px] uppercase border rounded-none truncate ${customConditions.purpose === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
                             >
                                 {tag}
                             </button>
@@ -787,7 +897,6 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
     return (
         <div className="h-full flex flex-col font-mono animate-fade-in relative">
             <Header />
-            {/* [v5.40] Increased bottom padding to prevent button overlap */}
             <div className="flex-1 overflow-y-auto p-6 pb-48 hide-scrollbar">
                 <div className="flex border-b border-gray-100 mb-4">
                     <button onClick={() => {setOutfitTab('random'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition rounded-none ${outfitTab === 'random' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>RANDOM</button>
@@ -800,7 +909,6 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
             <div className="absolute bottom-28 left-6 right-6 z-20">
                 <button 
                     onClick={generateOutfit} 
-                    // [v5.40] Slimmer button: py-2
                     className="w-full bg-black text-white py-2 text-[10px] font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 rounded-none"
                 >
                     <RefreshCw size={16} /> {generatedOutfit ? 'REGENERATE' : 'GENERATE OUTFIT'}
@@ -889,6 +997,9 @@ const AppContent = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [ratingFilter, setRatingFilter] = useState(0); 
     const [colorFilter, setColorFilter] = useState(''); 
+    // [v5.42] Add new filter states
+    const [materialFilter, setMaterialFilter] = useState('');
+    const [brandFilter, setBrandFilter] = useState('');
 
     // Shopping State
     const [shoppingCheck, setShoppingCheck] = useState({ image: null });
@@ -1132,6 +1243,11 @@ const AppContent = () => {
         return { sortedExpenses, sortedSources };
     }, [items]);
 
+    // [v5.42] Pass handleRemoveImage
+    const handleRemoveImage = (field) => {
+        setFormData(prev => ({ ...prev, [field]: '' }));
+    };
+
     return (
         <>
             {view === 'edit' && 
@@ -1141,6 +1257,7 @@ const AppContent = () => {
                     handleSaveItem={handleSaveItem} 
                     handleDelete={handleDelete} 
                     handleImageUpload={handleImageUpload} 
+                    handleRemoveImage={handleRemoveImage}
                     editingItem={editingItem} 
                     isAiLoading={isAiLoading} 
                     setView={setView}
@@ -1169,6 +1286,11 @@ const AppContent = () => {
                                 setRatingFilter={setRatingFilter} 
                                 colorFilter={colorFilter} 
                                 setColorFilter={setColorFilter} 
+                                // [v5.42] Pass new filters
+                                materialFilter={materialFilter}
+                                setMaterialFilter={setMaterialFilter}
+                                brandFilter={brandFilter}
+                                setBrandFilter={setBrandFilter}
                                 stats={statsData} 
                                 openEdit={openEdit}
                                 onExport={handleExportData}
