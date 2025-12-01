@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.49';
+const APP_VERSION = 'v6.7.2';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
@@ -39,16 +39,9 @@ const GlobalStyles = () => (
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Noto Sans TC", "Microsoft JhengHei", monospace !important;
     }
     
-    /* [v5.49] 全域強制隱藏捲軸 (但保留滑動功能) */
-    * {
-      -ms-overflow-style: none !important; /* IE and Edge */
-      scrollbar-width: none !important;  /* Firefox */
-    }
-    *::-webkit-scrollbar {
-      display: none !important; /* Chrome, Safari and Opera */
-    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* iOS & Mobile 優化 */
     @media screen and (max-width: 768px) {
       input, textarea, select {
         font-size: 16px !important;
@@ -141,8 +134,8 @@ const resizeImage = (file) => {
       img.src = event.target.result;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 320; 
-        const MAX_HEIGHT = 320;
+        const MAX_WIDTH = 1024; 
+        const MAX_HEIGHT = 1024;
         let width = img.width;
         let height = img.height;
 
@@ -161,16 +154,36 @@ const resizeImage = (file) => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+        resolve(canvas.toDataURL('image/jpeg', 0.8)); 
       };
     };
   });
 };
 
 // --- 資料結構與常數 ---
+const CATEGORY_CN = {
+  'TOPS': '上身', 'BOTTOMS': '下身', 'OUTER': '外套', 
+  'DRESS': '洋裝', 'SHOES': '鞋子', 'ACCESSORY': '配件'
+};
+
+const THICKNESS_CN = {
+  'THIN': '薄', 'MEDIUM': '適中', 'THICK': '厚', 'WARM': '保暖'
+};
+
+const STYLE_CN = {
+  'CASUAL': '休閒', 'FORMAL': '正式', 'SPORT': '運動', 'PARTY': '派對', 'HOME': '居家'
+};
+
+const MATERIAL_CN = {
+  'COTTON': '棉', 'POLYESTER': '聚酯纖維', 'WOOL': '羊毛', 'LINEN': '亞麻',
+  'SILK': '絲', 'LEATHER': '皮革', 'DENIM': '牛仔', 'NYLON': '尼龍',
+  'SPANDEX': '彈性纖維', 'RAYON': '人造絲', 'ACRYLIC': '壓克力纖維',
+  'CASHMERE': '喀什米爾', 'OTHER': '其他'
+};
+
 const INITIAL_DATA = [
-  { id: 'T01', name: 'WHITE T-SHIRT', category: 'TOPS', season: 'SUMMER', color: '#ffffff', image: '', labelImage: '', material: 'COTTON 100%', thickness: 'THIN', rating: 5, purchaseDate: '2023-06-15', source: 'UNIQLO', price: 390, note: 'ESSENTIAL BASIC.' },
-  { id: 'B01', name: 'DENIM WIDE LEG', category: 'BOTTOMS', season: 'ALL', color: '#3b82f6', image: '', labelImage: '', material: 'COTTON 98% / SPANDEX 2%', thickness: 'MEDIUM', rating: 4, purchaseDate: 'unknown', source: 'GU', price: 590, note: '' },
+  { id: 'T01', name: 'WHITE T-SHIRT', category: 'TOPS', season: 'SUMMER', color: '#ffffff', image: '', material: 'COTTON 100%', thickness: 'THIN', style: 'CASUAL', rating: 5, purchaseDate: '2023-06-15', source: 'UNIQLO', price: 390, note: 'ESSENTIAL BASIC.' },
+  { id: 'B01', name: 'DENIM WIDE LEG', category: 'BOTTOMS', season: 'ALL', color: '#3b82f6', image: '', material: 'COTTON 98% / SPANDEX 2%', thickness: 'MEDIUM', style: 'CASUAL', rating: 4, purchaseDate: 'unknown', source: 'GU', price: 590, note: '' },
 ];
 
 const CATEGORY_CONFIG = [
@@ -183,12 +196,11 @@ const CATEGORY_CONFIG = [
 ];
 
 const THICKNESS_OPTIONS = ['THIN', 'MEDIUM', 'THICK', 'WARM'];
+const STYLE_OPTIONS = ['CASUAL', 'FORMAL', 'SPORT', 'PARTY', 'HOME'];
+
 const MATERIALS_LIST = [
     'COTTON', 'POLYESTER', 'WOOL', 'LINEN', 'SILK', 'LEATHER', 
     'DENIM', 'NYLON', 'SPANDEX', 'RAYON', 'ACRYLIC', 'CASHMERE', 'OTHER'
-];
-const MATERIALS_MOCK = [
-    'COTTON 100%', 'COTTON 60% / POLYESTER 40%', 'WOOL 100%', 'COTTON 98% / SPANDEX 2%', 'LINEN 55% / COTTON 45%', 'POLYESTER 100%', 'LEATHER 100%', 'NYLON 80% / SPANDEX 20%'
 ];
 
 const TEMP_RANGES = [
@@ -277,8 +289,9 @@ const MaterialEditor = ({ materialString, onChange }) => {
                                 onChange={(e) => updateRow(i, 'name', e.target.value)}
                             >
                                 <option value="" disabled>SELECT MATERIAL</option>
+                                {/* [v6.6] Display Chinese Translation */}
                                 {MATERIALS_LIST.map(m => (
-                                    <option key={m} value={m}>{m}</option>
+                                    <option key={m} value={m}>{m} ({MATERIAL_CN[m]})</option>
                                 ))}
                             </select>
                             <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
@@ -309,7 +322,7 @@ const MaterialEditor = ({ materialString, onChange }) => {
     );
 };
 
-const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleImageUpload, handleRemoveImage, editingItem, isAiLoading, setView }) => (
+const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleImageUpload, handleRemoveImage, editingItem, setView }) => (
     <div className="bg-white h-full flex flex-col font-mono animate-fade-in">
         <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center sticky top-0 bg-white z-40 pt-safe-header">
             <button onClick={() => setView('wardrobe')}><X size={24} className="text-black"/></button>
@@ -317,7 +330,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
             <button onClick={handleSaveItem} className="text-xs font-bold uppercase tracking-widest border-b border-black pb-0.5 hover:opacity-50 rounded-none">SAVE</button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-safe">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-safe hide-scrollbar">
             <div className="flex gap-4 h-64">
                 <div className="flex-1 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-gray-100 group rounded-none">
                     {formData.image ? (
@@ -333,34 +346,27 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                     ) : (
                         <div className="text-center">
                             <Camera size={24} className="mx-auto mb-2 text-gray-300"/>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">MAIN PHOTO</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">ADD PHOTO</span>
                         </div>
                     )}
                     <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'image')} />
                 </div>
 
-                <div className="w-1/3 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-dashed border-gray-200 hover:border-black transition group rounded-none">
-                    {formData.labelImage ? (
-                        <>
-                            <img src={formData.labelImage} className="w-full h-full object-cover" alt="Label" />
+                <div className="w-1/3 flex flex-col">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">COLOR</label>
+                    <div className="flex-1 flex flex-wrap content-start gap-2 overflow-y-auto hide-scrollbar">
+                        {COLOR_PALETTE.map(c => (
                             <button 
-                                onClick={(e) => { e.stopPropagation(); handleRemoveImage('labelImage'); }}
-                                className="absolute top-2 right-2 bg-white/80 p-1 rounded-full shadow-sm z-10 hover:bg-white"
-                            >
-                                <X size={12} className="text-black" />
-                            </button>
-                        </>
-                    ) : (
-                        <div className="text-center p-2">
-                            <Tag size={20} className="mx-auto mb-2 text-gray-300"/>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 leading-tight block">LABEL<br/>PHOTO</span>
-                        </div>
-                    )}
-                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'labelImage')} />
+                                key={c.name}
+                                onClick={() => setFormData({...formData, color: c.value})}
+                                className={`w-8 h-8 rounded-sm border transition ${formData.color === c.value ? 'ring-2 ring-black ring-offset-2' : 'border-gray-200'}`}
+                                style={{backgroundColor: c.value}}
+                                title={c.name}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
-
-            {isAiLoading && <div className="text-center text-[10px] font-bold uppercase tracking-widest animate-pulse">AI ANALYZING FABRIC & COLOR...</div>}
 
             <div className="space-y-6">
                 <div className="border-b border-black pb-2">
@@ -374,21 +380,6 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                 </div>
 
                 <div className="grid grid-cols-1 gap-6">
-                    <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">COLOR</label>
-                        <div className="flex flex-wrap gap-2">
-                            {COLOR_PALETTE.map(c => (
-                                <button 
-                                  key={c.name}
-                                  onClick={() => setFormData({...formData, color: c.value})}
-                                  className={`w-6 h-6 rounded-sm border transition ${formData.color === c.value ? 'ring-2 ring-black ring-offset-2' : 'border-gray-200'}`}
-                                  style={{backgroundColor: c.value}}
-                                  title={c.name}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                    
                     <MaterialEditor 
                         materialString={formData.material} 
                         onChange={(newVal) => setFormData({...formData, material: newVal})}
@@ -404,7 +395,8 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                                 value={formData.category} 
                                 onChange={e => setFormData({...formData, category: e.target.value})}
                             >
-                                {CATEGORY_CONFIG.map(c => <option key={c.full} value={c.full}>{c.full}</option>)}
+                                {/* [v6.6] Display Chinese Translation */}
+                                {CATEGORY_CONFIG.map(c => <option key={c.full} value={c.full}>{c.full} ({CATEGORY_CN[c.full]})</option>)}
                             </select>
                             <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
                                 <ChevronDown size={14} />
@@ -424,6 +416,42 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                 </div>
 
                 <div className="pt-6 border-t border-gray-100">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                         <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">THICKNESS</label>
+                            <div className="relative">
+                                <select 
+                                    className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none" 
+                                    value={formData.thickness} 
+                                    onChange={e => setFormData({...formData, thickness: e.target.value})}
+                                >
+                                    {/* [v6.6] Display Chinese Translation */}
+                                    {THICKNESS_OPTIONS.map(t => <option key={t} value={t}>{t} ({THICKNESS_CN[t]})</option>)}
+                                </select>
+                                <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
+                                    <ChevronDown size={14} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">STYLE</label>
+                            <div className="relative">
+                                <select 
+                                    className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none" 
+                                    value={formData.style || 'CASUAL'} 
+                                    onChange={e => setFormData({...formData, style: e.target.value})}
+                                >
+                                    {/* [v6.6] Display Chinese Translation */}
+                                    {STYLE_OPTIONS.map(s => <option key={s} value={s}>{s} ({STYLE_CN[s]})</option>)}
+                                </select>
+                                <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
+                                    <ChevronDown size={14} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <h3 className="text-xs font-bold text-black uppercase tracking-widest mb-4">META DATA</h3>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <input 
@@ -483,7 +511,7 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 pb-32">
+        <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
             <div className="flex justify-between items-end mb-2">
                 <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CAPACITY</h2>
                 <span className="text-[10px] text-gray-500">{count}/{maxItems}</span>
@@ -564,7 +592,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
 
                 <div className="space-y-4">
-                    {/* [v5.45] 1. COLOR Filter */}
+                    {/* 1. COLOR Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -584,7 +612,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
                     </div>
 
-                    {/* [v5.45] 2. RATING Filter (Unified Layout) */}
+                    {/* 2. RATING Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RATING</span>
@@ -602,8 +630,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                             ))}
                         </div>
                     </div>
-
-                    {/* [v5.48] Removed MATERIAL Filter */}
 
                     {/* 3. BRAND Filter */}
                     <div className="space-y-2">
@@ -660,7 +686,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
 
                         <div className="pt-2 border-t border-gray-100">
-                            {/* [v5.48] Title color gray */}
                             <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">DATA MANAGEMENT</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button onClick={onExport} className="flex items-center justify-center gap-2 py-2 border border-black text-black text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition rounded-none">
@@ -757,7 +782,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
 const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomConditions, generatedOutfit, setGeneratedOutfit, generateOutfit, isColorSimilar }) => {
     const renderConditions = () => (
         <div className="space-y-8">
-            {/* [v5.45] Split Sensation into 3 Dropdowns */}
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
                 
@@ -871,18 +895,16 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
     return (
         <div className="h-full flex flex-col font-mono animate-fade-in relative">
             <Header />
+            {/* [v5.40] Increased bottom padding to pb-48 to clear floating button + keyboard */}
             <div className="flex-1 overflow-y-auto p-6 pb-48 hide-scrollbar">
-                <div className="flex border-b border-gray-100 mb-4">
-                    <button onClick={() => {setOutfitTab('random'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition rounded-none ${outfitTab === 'random' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>RANDOM</button>
-                    <button onClick={() => {setOutfitTab('custom'); setGeneratedOutfit(null);}} className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition rounded-none ${outfitTab === 'custom' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>CONDITIONS</button>
-                </div>
-                {outfitTab === 'custom' && !generatedOutfit && renderConditions()}
-                {outfitTab === 'random' && !generatedOutfit && <div className="text-center py-20 text-gray-300"><Sparkles size={48} className="mx-auto mb-4 opacity-50 stroke-1"/>GET INSPIRED</div>}
+                {/* [v6.6] Removed Tab Switching UI */}
+                {!generatedOutfit && renderConditions()}
                 {generatedOutfit && renderResult()}
             </div>
             <div className="absolute bottom-28 left-6 right-6 z-20">
                 <button 
                     onClick={generateOutfit} 
+                    // [v5.40] Slimmer button: py-2
                     className="w-full bg-black text-white py-2 text-[10px] font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 rounded-none"
                 >
                     <RefreshCw size={16} /> {generatedOutfit ? 'REGENERATE' : 'GENERATE OUTFIT'}
@@ -891,35 +913,6 @@ const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomCondit
         </div>
     );
 };
-
-const ShoppingPage = ({ shoppingCheck, setShoppingCheck, shoppingResult, setShoppingResult, isAnalyzing, setIsAnalyzing }) => (
-    <div className="h-full flex flex-col font-mono animate-fade-in">
-        <Header />
-        <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
-            <div className="border border-gray-200 p-8 text-center space-y-4 rounded-none">
-                <h3 className="font-serif text-xl uppercase">SHOPPING ASSISTANT</h3>
-                <p className="text-xs text-gray-400 leading-relaxed uppercase">UPLOAD A PHOTO OF THE ITEM YOU WANT TO BUY. AI WILL ANALYZE YOUR CURRENT WARDROBE TO PREVENT DUPLICATES.</p>
-                <label className="block w-full py-2 bg-black text-white text-xs font-bold uppercase tracking-widest cursor-pointer hover:opacity-90 rounded-none">
-                    UPLOAD PHOTO
-                    <input type="file" className="hidden" onChange={(e) => {
-                        if(e.target.files[0]) {
-                            setIsAnalyzing(true);
-                            setTimeout(() => { setIsAnalyzing(false); setShoppingResult({match: 3}); }, 1500);
-                        }
-                    }} />
-                </label>
-            </div>
-            {isAnalyzing && <div className="py-10 text-center"><Loader2 className="animate-spin mx-auto"/></div>}
-            {shoppingResult && (
-                <div className="mt-8 bg-gray-50 p-6 border border-gray-100 rounded-none">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">ANALYSIS RESULT</span>
-                    <h4 className="font-serif text-lg mb-1 uppercase">WAIT A MOMENT.</h4>
-                    <p className="text-sm text-gray-600 uppercase">YOU ALREADY HAVE <strong>{shoppingResult.match}</strong> SIMILAR ITEMS IN YOUR WARDROBE.</p>
-                </div>
-            )}
-        </div>
-    </div>
-);
 
 // --- Main App Component ---
 
@@ -950,16 +943,15 @@ const AppContent = () => {
 
     // Edit/Add Form State
     const [editingItem, setEditingItem] = useState(null); 
-    const [isAiLoading, setIsAiLoading] = useState(false);
     const [formData, setFormData] = useState({
         name: '', category: 'TOPS', season: 'ALL', color: '#000000',
-        material: '', thickness: 'MEDIUM', image: '', labelImage: '', rating: 3,
+        material: '', thickness: 'MEDIUM', style: 'CASUAL', image: '', labelImage: '', rating: 3,
         purchaseDate: '', isUnknownDate: false,
         source: '', price: '', note: ''
     });
 
     // Outfit Generator State
-    const [outfitTab, setOutfitTab] = useState('random'); 
+    // [v6.6] Removed outfitTab state
     const [customConditions, setCustomConditions] = useState({
         tempRange: '', weather: '', sensation: '', 
         environment: '', activity: '', purpose: '', 
@@ -971,14 +963,7 @@ const AppContent = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [ratingFilter, setRatingFilter] = useState(0); 
     const [colorFilter, setColorFilter] = useState(''); 
-    // [v5.42] Add new filter states
-    const [materialFilter, setMaterialFilter] = useState('');
     const [brandFilter, setBrandFilter] = useState('');
-
-    // Shopping State
-    const [shoppingCheck, setShoppingCheck] = useState({ image: null });
-    const [shoppingResult, setShoppingResult] = useState(null);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     useEffect(() => {
       const initData = async () => {
@@ -1055,7 +1040,7 @@ const AppContent = () => {
     const resetForm = (categoryOverride = null) => {
         setFormData({
             name: '', category: categoryOverride || activeCategory, season: 'ALL', color: '#000000',
-            material: '', thickness: 'MEDIUM', image: '', labelImage: '', rating: 3,
+            material: '', thickness: 'MEDIUM', style: 'CASUAL', image: '', labelImage: '', rating: 3,
             purchaseDate: new Date().toISOString().split('T')[0], isUnknownDate: false,
             source: '', price: '', note: ''
         });
@@ -1119,27 +1104,10 @@ const AppContent = () => {
         const file = e.target.files[0];
         if (file) {
             try {
-                setIsAiLoading(true); 
                 const resizedImage = await resizeImage(file);
                 setFormData(prev => ({ ...prev, [field]: resizedImage }));
-                
-                if (!formData.name) { 
-                    setTimeout(() => {
-                        const randomColor = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)].value;
-                        const randomMaterial = MATERIALS_MOCK[Math.floor(Math.random() * MATERIALS_MOCK.length)];
-                        if (field === 'labelImage') {
-                            setFormData(prev => ({ ...prev, material: randomMaterial }));
-                        } else {
-                            setFormData(prev => ({ ...prev, color: randomColor }));
-                        }
-                        setIsAiLoading(false);
-                    }, 800);
-                } else {
-                    setIsAiLoading(false);
-                }
             } catch (error) {
                 alert("圖片處理失敗");
-                setIsAiLoading(false);
             }
         }
     };
@@ -1160,33 +1128,49 @@ const AppContent = () => {
         let pool = [...items];
         let picks = { top: null, bottom: null, shoes: null, outer: null };
 
-        if (outfitTab === 'custom') {
-            if (customConditions.targetId) {
-                const t = items.find(i => i.id.toString() === customConditions.targetId);
-                if (t) {
-                    if (t.category === 'TOPS') picks.top = t;
-                    if (t.category === 'BOTTOMS') picks.bottom = t;
-                    if (t.category === 'SHOES') picks.shoes = t;
-                    if (t.category === 'OUTER') picks.outer = t;
-                }
-            } else if (customConditions.targetColor) {
-                const matches = pool.filter(i => isColorSimilar(i.color, customConditions.targetColor));
-                if(matches.length > 0) {
-                    const m = matches[Math.floor(Math.random()*matches.length)];
-                    if(m.category === 'TOPS' && !picks.top) picks.top = m;
-                    else if(m.category === 'BOTTOMS' && !picks.bottom) picks.bottom = m;
-                    else if(m.category === 'SHOES' && !picks.shoes) picks.shoes = m;
-                    else if(m.category === 'OUTER' && !picks.outer) picks.outer = m;
-                }
+        if (customConditions.targetId) {
+            const t = items.find(i => i.id.toString() === customConditions.targetId);
+            if (t) {
+                if (t.category === 'TOPS') picks.top = t;
+                if (t.category === 'BOTTOMS') picks.bottom = t;
+                if (t.category === 'SHOES') picks.shoes = t;
+                if (t.category === 'OUTER') picks.outer = t;
             }
+        } else if (customConditions.targetColor) {
+            const matches = pool.filter(i => isColorSimilar(i.color, customConditions.targetColor));
+            if(matches.length > 0) {
+                const m = matches[Math.floor(Math.random()*matches.length)];
+                if(m.category === 'TOPS' && !picks.top) picks.top = m;
+                else if(m.category === 'BOTTOMS' && !picks.bottom) picks.bottom = m;
+                else if(m.category === 'SHOES' && !picks.shoes) picks.shoes = m;
+                else if(m.category === 'OUTER' && !picks.outer) picks.outer = m;
+            }
+        }
 
-            const { tempRange, sensation, weather, activity } = customConditions;
-            
-            if(tempRange === 'freezing' || sensation === 'CHILLY' || sensation === 'COOL' || weather === 'SNOWY') {
-                pool = pool.filter(i => i.thickness === 'THICK' || i.thickness === 'WARM' || i.category === 'OUTER');
-            } else if ((tempRange === 'hot' || sensation === 'MUGGY') && weather !== 'SNOWY') {
-                pool = pool.filter(i => i.thickness === 'THIN' && i.category !== 'OUTER');
+        // [v6.5] Enhanced Logic with STYLE & THICKNESS
+        const { tempRange, sensation, weather, activity, purpose } = customConditions;
+        
+        if(tempRange === 'freezing' || sensation === 'CHILLY' || sensation === 'COOL' || weather === 'SNOWY') {
+            pool = pool.filter(i => i.thickness === 'THICK' || i.thickness === 'WARM' || i.category === 'OUTER');
+        } else if ((tempRange === 'hot' || sensation === 'MUGGY') && weather !== 'SNOWY') {
+            pool = pool.filter(i => i.thickness === 'THIN' && i.category !== 'OUTER');
+        }
+
+        // 2. Style (Context) Filter
+        // Logic: If purpose is selected, filter items that match or are compatible
+        if (purpose) {
+            if (purpose === 'FORMAL') {
+                // Formal needs Formal or Party items, usually not Sport
+                pool = pool.filter(i => i.style === 'FORMAL' || i.style === 'PARTY' || !i.style); // undefined style implies neutral
+            } else if (purpose === 'CASUAL' || purpose === 'DATE') {
+                // Casual/Date can use almost anything except maybe strict Home wear
+                pool = pool.filter(i => i.style !== 'HOME');
             }
+        }
+        
+        // Activity Filter
+        if (activity === 'ACTIVE') {
+            pool = pool.filter(i => i.style === 'SPORT' || i.style === 'CASUAL' || !i.style);
         }
 
         const tops = pool.filter(i => i.category === 'TOPS' || i.category === 'DRESS');
@@ -1230,10 +1214,8 @@ const AppContent = () => {
                     handleSaveItem={handleSaveItem} 
                     handleDelete={handleDelete} 
                     handleImageUpload={handleImageUpload} 
-                    // [v5.42] Pass handleRemoveImage
                     handleRemoveImage={handleRemoveImage}
                     editingItem={editingItem} 
-                    isAiLoading={isAiLoading} 
                     setView={setView}
                 />
             }
@@ -1260,9 +1242,7 @@ const AppContent = () => {
                                 setRatingFilter={setRatingFilter} 
                                 colorFilter={colorFilter} 
                                 setColorFilter={setColorFilter} 
-                                // [v5.42] New filters
-                                materialFilter={materialFilter}
-                                setMaterialFilter={setMaterialFilter}
+                                // [v6.7 Fix] Removed materialFilter
                                 brandFilter={brandFilter}
                                 setBrandFilter={setBrandFilter}
                                 stats={statsData} 
@@ -1273,24 +1253,13 @@ const AppContent = () => {
                         }
                         {view === 'outfit' && 
                             <OutfitPage 
-                                outfitTab={outfitTab} 
-                                setOutfitTab={setOutfitTab} 
+                                // Removed outfitTab & setOutfitTab
                                 customConditions={customConditions} 
                                 setCustomConditions={setCustomConditions} 
                                 generatedOutfit={generatedOutfit} 
                                 setGeneratedOutfit={setGeneratedOutfit} 
                                 generateOutfit={generateOutfit} 
                                 isColorSimilar={isColorSimilar}
-                            />
-                        }
-                        {view === 'shopping' && 
-                            <ShoppingPage 
-                                shoppingCheck={shoppingCheck}
-                                setShoppingCheck={setShoppingCheck}
-                                shoppingResult={shoppingResult} 
-                                setShoppingResult={setShoppingResult} 
-                                isAnalyzing={isAnalyzing} 
-                                setIsAnalyzing={setIsAnalyzing} 
                             />
                         }
                     </div>
@@ -1304,9 +1273,6 @@ const AppContent = () => {
                         </button>
                         <button onClick={() => setView('organize')} className={`flex flex-col items-center gap-1 transition ${view === 'organize' ? 'text-black' : 'hover:text-gray-600'}`}>
                             <ListFilter size={20} strokeWidth={1.5} /> ORGANIZE
-                        </button>
-                        <button onClick={() => setView('shopping')} className={`flex flex-col items-center gap-1 transition ${view === 'shopping' ? 'text-black' : 'hover:text-gray-600'}`}>
-                            <ShoppingBag size={20} strokeWidth={1.5} /> SHOP
                         </button>
                     </div>
                 </>
