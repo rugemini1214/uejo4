@@ -7,20 +7,19 @@ import {
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v5.47';
+const APP_VERSION = 'v5.49';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap');
     
-    /* [v5.32] 回歸 v5.24 的鎖定架構，解決頁面切換時的寬度跳動問題 */
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100%; /* 強制高度 */
-      overflow: hidden; /* 禁止瀏覽器外層捲動 */
+      height: 100%; 
+      overflow: hidden; 
       -webkit-font-smoothing: antialiased;
       background-color: #ffffff;
     }
@@ -40,9 +39,14 @@ const GlobalStyles = () => (
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Noto Sans TC", "Microsoft JhengHei", monospace !important;
     }
     
-    /* 隱藏 Scrollbar 但保留捲動功能 */
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* [v5.49] 全域強制隱藏捲軸 (但保留滑動功能) */
+    * {
+      -ms-overflow-style: none !important; /* IE and Edge */
+      scrollbar-width: none !important;  /* Firefox */
+    }
+    *::-webkit-scrollbar {
+      display: none !important; /* Chrome, Safari and Opera */
+    }
 
     /* iOS & Mobile 優化 */
     @media screen and (max-width: 768px) {
@@ -50,17 +54,13 @@ const GlobalStyles = () => (
         font-size: 16px !important;
       }
     }
-
-    /* [v5.47] 底部安全區域再增高：env + 2rem (約 32px) */
     .pb-safe {
       padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);
     }
-    
     .pt-safe-header {
       padding-top: max(1rem, env(safe-area-inset-top));
     }
     
-    /* Modal 動畫 */
     @keyframes slideUp {
       from { transform: translateY(100%); }
       to { transform: translateY(0); }
@@ -317,7 +317,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
             <button onClick={handleSaveItem} className="text-xs font-bold uppercase tracking-widest border-b border-black pb-0.5 hover:opacity-50 rounded-none">SAVE</button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-safe hide-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-safe">
             <div className="flex gap-4 h-64">
                 <div className="flex-1 relative bg-gray-50 flex flex-col items-center justify-center overflow-hidden border border-gray-100 group rounded-none">
                     {formData.image ? (
@@ -483,7 +483,7 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 pb-32">
             <div className="flex justify-between items-end mb-2">
                 <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CAPACITY</h2>
                 <span className="text-[10px] text-gray-500">{count}/{maxItems}</span>
@@ -521,11 +521,11 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
     );
 };
 
-const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, stats, openEdit, onExport, onImport, materialFilter, setMaterialFilter, brandFilter, setBrandFilter }) => {
+const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, stats, openEdit, onExport, onImport, brandFilter, setBrandFilter }) => {
     const [showStatsModal, setShowStatsModal] = useState(false);
     const currentYear = new Date().getFullYear().toString();
 
-    const isFiltering = searchQuery !== '' || ratingFilter !== 0 || colorFilter !== '' || materialFilter !== '' || brandFilter !== '';
+    const isFiltering = searchQuery !== '' || ratingFilter !== 0 || colorFilter !== '' || brandFilter !== '';
 
     const filteredItems = items.filter(item => {
         const matchSearch = searchQuery === '' || 
@@ -533,9 +533,8 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
             item.source?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchRating = ratingFilter === 0 || item.rating === ratingFilter;
         const matchColor = colorFilter === '' || item.color === colorFilter;
-        const matchMaterial = materialFilter === '' || (item.material && item.material.includes(materialFilter));
         const matchBrand = brandFilter === '' || (item.source && item.source === brandFilter);
-        return matchSearch && matchRating && matchColor && matchMaterial && matchBrand;
+        return matchSearch && matchRating && matchColor && matchBrand;
     });
 
     const currentYearExpense = stats.sortedExpenses.find(([year]) => year === currentYear)?.[1] || 0;
@@ -565,10 +564,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
 
                 <div className="space-y-4">
-                    {/* [v5.47] Organize Page - Layout Fix: Annual Report FIXED at top (if not filtering) */}
-                    {/* Logic: The entire filter section is scrollable in the body if needed, but Annual Report is separated */}
-                    
-                    {/* Filter Section */}
+                    {/* [v5.45] 1. COLOR Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -588,6 +584,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
                     </div>
 
+                    {/* [v5.45] 2. RATING Filter (Unified Layout) */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RATING</span>
@@ -606,26 +603,9 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                MATERIAL
-                                {materialFilter && <button onClick={() => setMaterialFilter('')} className="text-black text-[9px] underline uppercase">CLEAR</button>}
-                            </span>
-                        </div>
-                        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-                             {MATERIALS_LIST.map(m => (
-                                <button 
-                                    key={m}
-                                    onClick={() => setMaterialFilter(materialFilter === m ? '' : m)}
-                                    className={`px-3 py-1 text-[9px] border uppercase whitespace-nowrap rounded-none ${materialFilter === m ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
-                                >
-                                    {m}
-                                </button>
-                             ))}
-                        </div>
-                    </div>
+                    {/* [v5.48] Removed MATERIAL Filter */}
 
+                    {/* 3. BRAND Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -645,18 +625,23 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                              ))}
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    {/* [v5.47] Fixed Annual Report: Only show here if NOT filtering */}
-                    {!isFiltering && (
+            <div className="flex-1 overflow-y-auto p-6 pb-32">
+                {!isFiltering ? (
+                    <div className="space-y-4 animate-fade-in">
                         <div className="border border-black p-4 relative overflow-hidden">
                             <div className="absolute top-0 right-0 bg-black text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-widest">
                                 ANNUAL REPORT
                             </div>
+                            
                             <div className="mt-2 space-y-4">
                                 <div className="space-y-1">
                                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">{currentYear} TOTAL SPENT</span>
                                     <div className="text-3xl font-serif font-bold tracking-tight">NT${currentYearExpense.toLocaleString()}</div>
                                 </div>
+                                
                                 <div className="space-y-1">
                                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">MOST LOVED BRAND</span>
                                     <div className="flex items-baseline gap-3">
@@ -665,6 +650,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                     </div>
                                 </div>
                             </div>
+
                             <button 
                                 onClick={() => setShowStatsModal(true)}
                                 className="w-full py-2 mt-3 border-t border-gray-100 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition"
@@ -672,17 +658,10 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 VIEW DETAILS <ChevronRight size={12} />
                             </button>
                         </div>
-                    )}
 
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
-                {!isFiltering ? (
-                    // [v5.47] Only Data Management scrolls now
-                    <div className="space-y-4 animate-fade-in">
                         <div className="pt-2 border-t border-gray-100">
-                            <h3 className="text-[10px] font-bold uppercase tracking-widest mb-2">DATA MANAGEMENT</h3>
+                            {/* [v5.48] Title color gray */}
+                            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">DATA MANAGEMENT</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <button onClick={onExport} className="flex items-center justify-center gap-2 py-2 border border-black text-black text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition rounded-none">
                                     <Download size={12} /> EXPORT
@@ -778,13 +757,13 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
 const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomConditions, generatedOutfit, setGeneratedOutfit, generateOutfit, isColorSimilar }) => {
     const renderConditions = () => (
         <div className="space-y-8">
+            {/* [v5.45] Split Sensation into 3 Dropdowns */}
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
                 
                 <div className="grid grid-cols-1 gap-4">
                     <div className="relative">
                         <select 
-                            // [v5.47] Search bar height reduced to py-2 for consistency
                             className="w-full border-b border-gray-200 py-2 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
                             value={customConditions.tempRange}
                             onChange={e => setCustomConditions({...customConditions, tempRange: e.target.value})}
@@ -1281,7 +1260,7 @@ const AppContent = () => {
                                 setRatingFilter={setRatingFilter} 
                                 colorFilter={colorFilter} 
                                 setColorFilter={setColorFilter} 
-                                // [v5.42] Pass new filters
+                                // [v5.42] New filters
                                 materialFilter={materialFilter}
                                 setMaterialFilter={setMaterialFilter}
                                 brandFilter={brandFilter}
