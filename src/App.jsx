@@ -3,11 +3,11 @@ import {
   Plus, Trash2, Shuffle, Shirt, Search, X, Save, RefreshCw, 
   ShoppingBag, Camera, ArrowRight, Loader2, Sparkles, 
   Thermometer, MapPin, Hash, Star, Briefcase, 
-  Wind, CloudRain, Sun, Cloud, LayoutGrid, ListFilter, Check, Tag, FileText, TrendingUp, Store, Minus, ChevronDown, Download, Upload, ChevronRight, BarChart3
+  Wind, CloudRain, Sun, Cloud, LayoutGrid, ListFilter, Check, Tag, FileText, TrendingUp, Store, Minus, ChevronDown, Download, Upload, ChevronRight, BarChart3, Heart
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v6.7.2';
+const APP_VERSION = 'v6.9.4';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
@@ -39,6 +39,7 @@ const GlobalStyles = () => (
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "Noto Sans TC", "Microsoft JhengHei", monospace !important;
     }
     
+    /* 隱藏 Scrollbar 但保留捲動功能 */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -66,8 +67,9 @@ const GlobalStyles = () => (
 
 // --- IndexedDB 工具 ---
 const DB_NAME = 'WardrobeDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'items';
+const DB_VERSION = 2;
+const STORE_ITEMS = 'items';
+const STORE_OUTFITS = 'outfits';
 
 const dbHelper = {
   open: () => {
@@ -75,52 +77,55 @@ const dbHelper = {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        if (!db.objectStoreNames.contains(STORE_ITEMS)) {
+          db.createObjectStore(STORE_ITEMS, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(STORE_OUTFITS)) {
+          db.createObjectStore(STORE_OUTFITS, { keyPath: 'id' });
         }
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
   },
-  getAll: async () => {
+  getAll: async (storeName) => {
     const db = await dbHelper.open();
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      const tx = db.transaction(storeName, 'readonly');
+      const store = tx.objectStore(storeName);
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
     });
   },
-  save: async (item) => {
+  save: async (storeName, item) => {
     const db = await dbHelper.open();
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.put(item);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const req = store.put(item);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
     });
   },
-  delete: async (id) => {
+  delete: async (storeName, id) => {
     const db = await dbHelper.open();
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.delete(id);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const req = store.delete(id);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
     });
   },
-  clear: async () => {
+  clear: async (storeName) => {
     const db = await dbHelper.open();
     return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.clear();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const req = store.clear();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
     });
   }
 };
@@ -241,9 +246,9 @@ const serializeMaterialRows = (rows) => {
 
 const Header = ({ rightAction }) => (
     <div className="bg-white px-6 pt-safe-header pb-4 flex justify-between items-end sticky top-0 z-40 bg-opacity-95 backdrop-blur-sm border-b border-gray-50 shadow-sm transition-all duration-300">
-        <div className="flex items-baseline gap-3">
-            <h1 className="text-3xl tracking-tighter font-serif font-bold text-black uppercase leading-none">MY WALK-IN CLOSET</h1>
-            <span className="text-[10px] text-gray-400 font-mono tracking-widest">{APP_VERSION}</span>
+        <div className="flex items-baseline gap-2 overflow-hidden">
+            <h1 className="text-2xl sm:text-3xl tracking-tighter font-serif font-bold text-black uppercase leading-none whitespace-nowrap truncate">MY WALK-IN CLOSET</h1>
+            <span className="text-[10px] text-gray-400 font-mono tracking-widest shrink-0">{APP_VERSION}</span>
         </div>
         {rightAction}
     </div>
@@ -284,14 +289,14 @@ const MaterialEditor = ({ materialString, onChange }) => {
                     <div key={i} className="flex gap-2 items-center">
                         <div className="flex-1 relative">
                             <select
-                                className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
+                                className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
                                 value={row.name}
                                 onChange={(e) => updateRow(i, 'name', e.target.value)}
                             >
                                 <option value="" disabled>SELECT MATERIAL</option>
-                                {/* [v6.6] Display Chinese Translation */}
+                                {/* [v6.6] Display Chinese Translation: [English / Chinese] */}
                                 {MATERIALS_LIST.map(m => (
-                                    <option key={m} value={m}>{m} ({MATERIAL_CN[m]})</option>
+                                    <option key={m} value={m}>{m} / {MATERIAL_CN[m]}</option>
                                 ))}
                             </select>
                             <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
@@ -359,7 +364,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                             <button 
                                 key={c.name}
                                 onClick={() => setFormData({...formData, color: c.value})}
-                                className={`w-8 h-8 rounded-sm border transition ${formData.color === c.value ? 'ring-2 ring-black ring-offset-2' : 'border-gray-200'}`}
+                                className={`w-8 h-8 rounded-sm border transition ${formData.color === c.value ? 'ring-2 ring-black ring-inset' : 'border-gray-200'}`}
                                 style={{backgroundColor: c.value}}
                                 title={c.name}
                             />
@@ -391,7 +396,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">CATEGORY</label>
                         <div className="relative">
                             <select 
-                                className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none" 
+                                className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none" 
                                 value={formData.category} 
                                 onChange={e => setFormData({...formData, category: e.target.value})}
                             >
@@ -421,12 +426,12 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">THICKNESS</label>
                             <div className="relative">
                                 <select 
-                                    className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none" 
+                                    className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none" 
                                     value={formData.thickness} 
                                     onChange={e => setFormData({...formData, thickness: e.target.value})}
                                 >
                                     {/* [v6.6] Display Chinese Translation */}
-                                    {THICKNESS_OPTIONS.map(t => <option key={t} value={t}>{t} ({THICKNESS_CN[t]})</option>)}
+                                    {THICKNESS_OPTIONS.map(t => <option key={t} value={t}>{t} / {THICKNESS_CN[t]}</option>)}
                                 </select>
                                 <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
                                     <ChevronDown size={14} />
@@ -438,12 +443,12 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">STYLE</label>
                             <div className="relative">
                                 <select 
-                                    className="w-full border-b border-gray-200 py-1 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none" 
+                                    className="w-full border-b border-gray-200 py-1 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none" 
                                     value={formData.style || 'CASUAL'} 
                                     onChange={e => setFormData({...formData, style: e.target.value})}
                                 >
                                     {/* [v6.6] Display Chinese Translation */}
-                                    {STYLE_OPTIONS.map(s => <option key={s} value={s}>{s} ({STYLE_CN[s]})</option>)}
+                                    {STYLE_OPTIONS.map(s => <option key={s} value={s}>{s} / {STYLE_CN[s]}</option>)}
                                 </select>
                                 <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
                                     <ChevronDown size={14} />
@@ -579,7 +584,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
             <Header />
             
             <div className="p-6 bg-white z-30 border-b border-gray-50 space-y-4">
-                <div className="bg-gray-50 flex items-center px-4 py-3">
+                <div className="bg-gray-50 flex items-center px-4 py-2">
                     <Search size={16} className="text-gray-400 mr-3"/>
                     <input 
                         type="text" 
@@ -605,7 +610,8 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 <button 
                                   key={c.name}
                                   onClick={() => setColorFilter(colorFilter === c.value ? '' : c.value)}
-                                  className={`w-6 h-6 rounded-sm border flex-shrink-0 ${colorFilter === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-200'}`}
+                                  // [v6.9.4 Fix] ring-inset applied
+                                  className={`w-8 h-8 rounded-sm border flex-shrink-0 transition ${colorFilter === c.value ? 'ring-2 ring-black ring-inset' : 'border-gray-200'}`}
                                   style={{backgroundColor: c.value}}
                                 />
                             ))}
@@ -654,7 +660,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 pb-32">
+            <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
                 {!isFiltering ? (
                     <div className="space-y-4 animate-fade-in">
                         <div className="border border-black p-4 relative overflow-hidden">
@@ -779,155 +785,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
     );
 };
 
-const OutfitPage = ({ outfitTab, setOutfitTab, customConditions, setCustomConditions, generatedOutfit, setGeneratedOutfit, generateOutfit, isColorSimilar }) => {
-    const renderConditions = () => (
-        <div className="space-y-8">
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
-                
-                <div className="grid grid-cols-1 gap-4">
-                    <div className="relative">
-                        <select 
-                            className="w-full border-b border-gray-200 py-2 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
-                            value={customConditions.tempRange}
-                            onChange={e => setCustomConditions({...customConditions, tempRange: e.target.value})}
-                        >
-                            <option value="">TEMP RANGE</option>
-                            {TEMP_RANGES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                        </select>
-                        <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="relative">
-                            <select 
-                                className="w-full border-b border-gray-200 py-2 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
-                                value={customConditions.weather || ''}
-                                onChange={e => setCustomConditions({...customConditions, weather: e.target.value})}
-                            >
-                                <option value="">WEATHER</option>
-                                {WEATHER_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
-                            </select>
-                            <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
-                        </div>
-
-                        <div className="relative">
-                            <select 
-                                className="w-full border-b border-gray-200 py-2 bg-transparent text-sm font-medium outline-none uppercase appearance-none rounded-none"
-                                value={customConditions.sensation || ''}
-                                onChange={e => setCustomConditions({...customConditions, sensation: e.target.value})}
-                            >
-                                <option value="">SENSATION</option>
-                                {SENSATION_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
-                            </select>
-                            <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CONTEXT</label>
-                <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                        {['INDOOR', 'OUTDOOR'].map(tag => (
-                            <button 
-                                key={tag} 
-                                onClick={() => setCustomConditions({...customConditions, environment: customConditions.environment === tag ? '' : tag})}
-                                className={`w-full py-1 text-[10px] uppercase border rounded-none ${customConditions.environment === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                        {['ACTIVE', 'STATIC'].map(tag => (
-                             <button 
-                                key={tag} 
-                                onClick={() => setCustomConditions({...customConditions, activity: customConditions.activity === tag ? '' : tag})}
-                                className={`w-full py-1 text-[10px] uppercase border rounded-none ${customConditions.activity === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-2">
-                        {PURPOSE_TAGS.map(tag => (
-                            <button 
-                                key={tag} 
-                                onClick={() => setCustomConditions({...customConditions, purpose: customConditions.purpose === tag ? '' : tag})}
-                                className={`w-full py-1 text-[10px] uppercase border rounded-none truncate ${customConditions.purpose === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">TARGET (SELECT ONE)</label>
-                <div className={`flex flex-wrap gap-2 transition-opacity ${customConditions.targetId ? 'opacity-30 pointer-events-none' : ''}`}>
-                    {COLOR_PALETTE.map(c => (
-                        <button key={c.name} onClick={() => setCustomConditions(prev => ({...prev, targetColor: prev.targetColor === c.value ? '' : c.value, targetId: ''}))} className={`w-8 h-8 aspect-square rounded-sm border ${customConditions.targetColor === c.value ? 'ring-1 ring-black ring-offset-2' : 'border-gray-100'}`} style={{backgroundColor: c.value}} />
-                    ))}
-                </div>
-                <div className={`pt-2 transition-opacity ${customConditions.targetColor ? 'opacity-30' : ''}`}>
-                    <input type="text" placeholder="ENTER ITEM ID #" className="w-full border-b border-gray-200 py-2 text-sm font-mono outline-none uppercase placeholder-gray-300 rounded-none" value={customConditions.targetId} onChange={e => setCustomConditions(prev => ({...prev, targetId: e.target.value.toUpperCase(), targetColor: ''}))} onFocus={() => setCustomConditions(prev => ({...prev, targetColor: ''}))} />
-                </div>
-            </div>
-        </div>
-    );
-
-    const renderResult = () => (
-        <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="col-span-2 aspect-[4/3] bg-gray-50 flex items-center justify-center border border-gray-100 p-4 gap-4 rounded-none">
-                {generatedOutfit.top && <img src={generatedOutfit.top.image} className="h-full object-contain mix-blend-multiply" alt="top"/>}
-                {generatedOutfit.outer && <img src={generatedOutfit.outer.image} className="h-full object-contain mix-blend-multiply" alt="outer"/>}
-            </div>
-            {generatedOutfit.bottom && <div className="aspect-square bg-gray-50 border border-gray-100 p-2 rounded-none"><img src={generatedOutfit.bottom.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
-            {generatedOutfit.shoes && <div className="aspect-square bg-gray-50 border border-gray-100 p-2 rounded-none"><img src={generatedOutfit.shoes.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
-        </div>
-    );
-
-    return (
-        <div className="h-full flex flex-col font-mono animate-fade-in relative">
-            <Header />
-            {/* [v5.40] Increased bottom padding to pb-48 to clear floating button + keyboard */}
-            <div className="flex-1 overflow-y-auto p-6 pb-48 hide-scrollbar">
-                {/* [v6.6] Removed Tab Switching UI */}
-                {!generatedOutfit && renderConditions()}
-                {generatedOutfit && renderResult()}
-            </div>
-            <div className="absolute bottom-28 left-6 right-6 z-20">
-                <button 
-                    onClick={generateOutfit} 
-                    // [v5.40] Slimmer button: py-2
-                    className="w-full bg-black text-white py-2 text-[10px] font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 rounded-none"
-                >
-                    <RefreshCw size={16} /> {generatedOutfit ? 'REGENERATE' : 'GENERATE OUTFIT'}
-                </button>
-            </div>
-        </div>
-    );
-};
-
-// --- Main App Component ---
-
-export default function App() {
-  return (
-    <div className="bg-white h-[100dvh] w-full flex justify-center text-black selection:bg-gray-200 overflow-hidden">
-      <GlobalStyles />
-      <div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
-        <AppContent />
-      </div>
-    </div>
-  );
-}
-
-// Separate component to hold state and logic
 const AppContent = () => {
     const [items, setItems] = useState(() => {
         try {
@@ -951,13 +808,13 @@ const AppContent = () => {
     });
 
     // Outfit Generator State
-    // [v6.6] Removed outfitTab state
     const [customConditions, setCustomConditions] = useState({
         tempRange: '', weather: '', sensation: '', 
         environment: '', activity: '', purpose: '', 
         targetColor: '', targetId: '' 
     });
     const [generatedOutfit, setGeneratedOutfit] = useState(null);
+    const [savedOutfits, setSavedOutfits] = useState([]);
 
     // Organize State
     const [searchQuery, setSearchQuery] = useState('');
@@ -968,7 +825,7 @@ const AppContent = () => {
     useEffect(() => {
       const initData = async () => {
         try {
-          const dbItems = await dbHelper.getAll();
+          const dbItems = await dbHelper.getAll(STORE_ITEMS);
           if (dbItems && dbItems.length > 0) {
             setItems(dbItems);
           } else {
@@ -976,13 +833,15 @@ const AppContent = () => {
             if (localItems) {
               const parsedItems = JSON.parse(localItems);
               if (parsedItems.length > 0) {
-                console.log("Migrating data to IndexedDB...");
                 for (const item of parsedItems) {
-                  await dbHelper.save(item);
+                  await dbHelper.save(STORE_ITEMS, item);
                 }
               }
             }
           }
+          const dbOutfits = await dbHelper.getAll(STORE_OUTFITS);
+          if(dbOutfits) setSavedOutfits(dbOutfits);
+
         } catch (err) {
           console.error("DB Init Failed:", err);
         }
@@ -992,7 +851,7 @@ const AppContent = () => {
 
     const handleExportData = async () => {
         try {
-            const allItems = await dbHelper.getAll();
+            const allItems = await dbHelper.getAll(STORE_ITEMS);
             const dataStr = JSON.stringify(allItems);
             const blob = new Blob([dataStr], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
@@ -1021,9 +880,9 @@ const AppContent = () => {
             try {
                 const data = JSON.parse(event.target.result);
                 if (Array.isArray(data)) {
-                    await dbHelper.clear();
+                    await dbHelper.clear(STORE_ITEMS);
                     for (const item of data) {
-                        await dbHelper.save(item);
+                        await dbHelper.save(STORE_ITEMS, item);
                     }
                     setItems(data);
                     alert("還原成功！");
@@ -1081,7 +940,7 @@ const AppContent = () => {
         });
 
         try {
-          await dbHelper.save(newItemData);
+          await dbHelper.save(STORE_ITEMS, newItemData);
         } catch (err) {
           alert("儲存失敗！");
         }
@@ -1095,7 +954,7 @@ const AppContent = () => {
     const handleDelete = async (id) => {
         if (window.confirm('DELETE THIS ITEM?')) {
             setItems(items.filter(item => item.id !== id));
-            await dbHelper.delete(id);
+            await dbHelper.delete(STORE_ITEMS, id);
             setView('wardrobe');
         }
     };
@@ -1120,6 +979,26 @@ const AppContent = () => {
             purchaseDate: item.purchaseDate === 'unknown' ? '' : item.purchaseDate
         });
         setView('edit');
+    };
+
+    const handleSaveOutfit = async () => {
+        if (!generatedOutfit) return;
+        const newOutfit = {
+            id: Date.now(), 
+            date: new Date().toISOString(),
+            items: generatedOutfit
+        };
+        
+        await dbHelper.save(STORE_OUTFITS, newOutfit);
+        setSavedOutfits([newOutfit, ...savedOutfits]);
+        alert("OUTFIT SAVED!");
+    };
+
+    const handleDeleteOutfit = async (id) => {
+        if(window.confirm("REMOVE THIS OUTFIT?")) {
+            await dbHelper.delete(STORE_OUTFITS, id);
+            setSavedOutfits(savedOutfits.filter(o => o.id !== id));
+        }
     };
 
     const isColorSimilar = (hex1, hex2) => hex1 && hex2 && hex1.toLowerCase() === hex2.toLowerCase(); 
@@ -1147,7 +1026,6 @@ const AppContent = () => {
             }
         }
 
-        // [v6.5] Enhanced Logic with STYLE & THICKNESS
         const { tempRange, sensation, weather, activity, purpose } = customConditions;
         
         if(tempRange === 'freezing' || sensation === 'CHILLY' || sensation === 'COOL' || weather === 'SNOWY') {
@@ -1156,19 +1034,14 @@ const AppContent = () => {
             pool = pool.filter(i => i.thickness === 'THIN' && i.category !== 'OUTER');
         }
 
-        // 2. Style (Context) Filter
-        // Logic: If purpose is selected, filter items that match or are compatible
         if (purpose) {
             if (purpose === 'FORMAL') {
-                // Formal needs Formal or Party items, usually not Sport
-                pool = pool.filter(i => i.style === 'FORMAL' || i.style === 'PARTY' || !i.style); // undefined style implies neutral
+                pool = pool.filter(i => i.style === 'FORMAL' || i.style === 'PARTY' || !i.style); 
             } else if (purpose === 'CASUAL' || purpose === 'DATE') {
-                // Casual/Date can use almost anything except maybe strict Home wear
                 pool = pool.filter(i => i.style !== 'HOME');
             }
         }
         
-        // Activity Filter
         if (activity === 'ACTIVE') {
             pool = pool.filter(i => i.style === 'SPORT' || i.style === 'CASUAL' || !i.style);
         }
@@ -1242,7 +1115,6 @@ const AppContent = () => {
                                 setRatingFilter={setRatingFilter} 
                                 colorFilter={colorFilter} 
                                 setColorFilter={setColorFilter} 
-                                // [v6.7 Fix] Removed materialFilter
                                 brandFilter={brandFilter}
                                 setBrandFilter={setBrandFilter}
                                 stats={statsData} 
@@ -1253,13 +1125,17 @@ const AppContent = () => {
                         }
                         {view === 'outfit' && 
                             <OutfitPage 
-                                // Removed outfitTab & setOutfitTab
                                 customConditions={customConditions} 
                                 setCustomConditions={setCustomConditions} 
                                 generatedOutfit={generatedOutfit} 
                                 setGeneratedOutfit={setGeneratedOutfit} 
                                 generateOutfit={generateOutfit} 
                                 isColorSimilar={isColorSimilar}
+                                savedOutfits={savedOutfits}
+                                setSavedOutfits={setSavedOutfits}
+                                handleSaveOutfit={handleSaveOutfit}
+                                handleDeleteOutfit={handleDeleteOutfit}
+                                items={items}
                             />
                         }
                     </div>
@@ -1280,3 +1156,16 @@ const AppContent = () => {
         </>
     );
 };
+
+// --- Main App Component ---
+// [v6.9.1 fix] Ensure AppContent is defined before App
+export default function App() {
+  return (
+    <div className="bg-white h-[100dvh] w-full flex justify-center text-black selection:bg-gray-200 overflow-hidden">
+      <GlobalStyles />
+      <div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col border-x border-gray-50 overflow-hidden">
+        <AppContent />
+      </div>
+    </div>
+  );
+}
