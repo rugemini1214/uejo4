@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Plus, Trash2, Shuffle, Shirt, Search, X, Save, RefreshCw, 
-  ShoppingBag, Camera, ArrowRight, Loader2, Sparkles, 
-  Thermometer, MapPin, Hash, Star, Briefcase, 
-  Wind, CloudRain, Sun, Cloud, LayoutGrid, ListFilter, Check, Tag, FileText, TrendingUp, Store, Minus, ChevronDown, Download, Upload, ChevronRight, BarChart3, Heart
+  Plus, Shirt, Search, X, RefreshCw, Camera, 
+  LayoutGrid, ListFilter, ChevronDown, Download, Upload, ChevronRight, BarChart3, Heart, Sparkles, Star
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v6.9.4';
+const APP_VERSION = 'v6.10';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
@@ -294,7 +292,6 @@ const MaterialEditor = ({ materialString, onChange }) => {
                                 onChange={(e) => updateRow(i, 'name', e.target.value)}
                             >
                                 <option value="" disabled>SELECT MATERIAL</option>
-                                {/* [v6.6] Display Chinese Translation: [English / Chinese] */}
                                 {MATERIALS_LIST.map(m => (
                                     <option key={m} value={m}>{m} / {MATERIAL_CN[m]}</option>
                                 ))}
@@ -343,7 +340,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                             <img src={formData.image} className="w-full h-full object-cover" alt="Main" />
                             <button 
                                 onClick={(e) => { e.stopPropagation(); handleRemoveImage('image'); }}
-                                className="absolute top-2 right-2 bg-white/80 p-1 rounded-full shadow-sm z-10 hover:bg-white"
+                                className="absolute top-2 right-2 bg-white/80 p-1 rounded-none shadow-sm z-10 hover:bg-white"
                             >
                                 <X size={16} className="text-black" />
                             </button>
@@ -364,7 +361,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                             <button 
                                 key={c.name}
                                 onClick={() => setFormData({...formData, color: c.value})}
-                                className={`w-8 h-8 rounded-sm border transition ${formData.color === c.value ? 'ring-2 ring-black ring-inset' : 'border-gray-200'}`}
+                                className={`w-8 h-8 rounded-none border transition ${formData.color === c.value ? 'ring-2 ring-black ring-inset' : 'border-gray-200'}`}
                                 style={{backgroundColor: c.value}}
                                 title={c.name}
                             />
@@ -400,8 +397,7 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                                 value={formData.category} 
                                 onChange={e => setFormData({...formData, category: e.target.value})}
                             >
-                                {/* [v6.6] Display Chinese Translation */}
-                                {CATEGORY_CONFIG.map(c => <option key={c.full} value={c.full}>{c.full} ({CATEGORY_CN[c.full]})</option>)}
+                                {CATEGORY_CONFIG.map(c => <option key={c.full} value={c.full}>{c.full} / {CATEGORY_CN[c.full]}</option>)}
                             </select>
                             <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
                                 <ChevronDown size={14} />
@@ -430,7 +426,6 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                                     value={formData.thickness} 
                                     onChange={e => setFormData({...formData, thickness: e.target.value})}
                                 >
-                                    {/* [v6.6] Display Chinese Translation */}
                                     {THICKNESS_OPTIONS.map(t => <option key={t} value={t}>{t} / {THICKNESS_CN[t]}</option>)}
                                 </select>
                                 <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
@@ -447,7 +442,6 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                                     value={formData.style || 'CASUAL'} 
                                     onChange={e => setFormData({...formData, style: e.target.value})}
                                 >
-                                    {/* [v6.6] Display Chinese Translation */}
                                     {STYLE_OPTIONS.map(s => <option key={s} value={s}>{s} / {STYLE_CN[s]}</option>)}
                                 </select>
                                 <div className="absolute right-0 top-1 pointer-events-none text-gray-400">
@@ -462,20 +456,20 @@ const EditPage = ({ formData, setFormData, handleSaveItem, handleDelete, handleI
                         <input 
                           type="text" 
                           placeholder="BRAND / SOURCE" 
-                          className="border-b border-gray-200 py-2 outline-none uppercase rounded-none" 
+                          className="border-b border-gray-200 py-2 outline-none uppercase rounded-none bg-transparent" 
                           value={formData.source} 
                           onChange={e => setFormData({...formData, source: e.target.value})} 
                         />
                         <input 
                           type="number" 
                           placeholder="PRICE (NT$)" 
-                          className="border-b border-gray-200 py-2 outline-none rounded-none" 
+                          className="border-b border-gray-200 py-2 outline-none rounded-none bg-transparent" 
                           value={formData.price} 
                           onChange={e => setFormData({...formData, price: e.target.value})} 
                         />
                     </div>
                     <textarea 
-                      className="w-full border-b border-gray-200 py-2 mt-4 text-sm outline-none resize-none h-20 placeholder-gray-300 rounded-none" 
+                      className="w-full border-b border-gray-200 py-2 mt-4 text-sm outline-none resize-none h-20 placeholder-gray-300 rounded-none bg-transparent" 
                       placeholder="NOTES..." 
                       value={formData.note} 
                       onChange={e => setFormData({...formData, note: e.target.value})} 
@@ -597,7 +591,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                 </div>
 
                 <div className="space-y-4">
-                    {/* 1. COLOR Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -610,15 +603,13 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                                 <button 
                                   key={c.name}
                                   onClick={() => setColorFilter(colorFilter === c.value ? '' : c.value)}
-                                  // [v6.9.4 Fix] ring-inset applied
-                                  className={`w-8 h-8 rounded-sm border flex-shrink-0 transition ${colorFilter === c.value ? 'ring-2 ring-black ring-inset' : 'border-gray-200'}`}
+                                  className={`w-6 h-6 rounded-none border flex-shrink-0 transition ${colorFilter === c.value ? 'ring-2 ring-black ring-inset' : 'border-gray-200'}`}
                                   style={{backgroundColor: c.value}}
                                 />
                             ))}
                         </div>
                     </div>
 
-                    {/* 2. RATING Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RATING</span>
@@ -637,7 +628,6 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                         </div>
                     </div>
 
-                    {/* 3. BRAND Filter */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -742,9 +732,9 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                             <button onClick={() => setShowStatsModal(false)}><X size={24} /></button>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8 font-mono">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 font-mono hide-scrollbar">
                             <div>
-                                <h4 className="text-xs font-bold uppercase tracking-widest mb-4 text-gray-400">LAST 5 YEARS EXPENSE</h4>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-gray-400">LAST 5 YEARS EXPENSE</h4>
                                 <div className="space-y-3">
                                     {last5YearsStats.map(([year, total]) => (
                                         <div key={year} className="flex justify-between items-center border-b border-gray-50 pb-2">
@@ -757,7 +747,7 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                             </div>
 
                             <div>
-                                <h4 className="text-xs font-bold uppercase tracking-widest mb-4 text-gray-400">TOP 5 BRANDS</h4>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-gray-400">TOP 5 BRANDS</h4>
                                 <div className="space-y-3">
                                     {stats.sortedSources.slice(0, 5).map(([name, count], index) => (
                                         <div key={name} className="flex justify-between items-center border-b border-gray-50 pb-2">
@@ -785,7 +775,292 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
     );
 };
 
+const OutfitPage = ({ customConditions, setCustomConditions, generatedOutfit, setGeneratedOutfit, generateOutfit, isColorSimilar, savedOutfits, setSavedOutfits, handleSaveOutfit, handleDeleteOutfit, items }) => {
+    const [activeTab, setActiveTab] = useState('GENERATOR');
+    const [manualIds, setManualIds] = useState(['', '', '', '', '', '']);
+    const [manualName, setManualName] = useState('');
+    const [showResultModal, setShowResultModal] = useState(false);
+    const [outfitName, setOutfitName] = useState('');
+
+    useEffect(() => {
+        if(generatedOutfit) {
+            setOutfitName('');
+            setShowResultModal(true);
+        }
+    }, [generatedOutfit]);
+
+    const handleSaveGenerated = async () => {
+        if (!generatedOutfit) return;
+        const newOutfit = {
+            id: Date.now(), 
+            date: new Date().toISOString(),
+            name: outfitName || 'UNTITLED LOOK',
+            items: generatedOutfit
+        };
+        
+        await dbHelper.save(STORE_OUTFITS, newOutfit);
+        setSavedOutfits([newOutfit, ...savedOutfits]);
+        setShowResultModal(false);
+        setGeneratedOutfit(null);
+        alert("OUTFIT SAVED!");
+    };
+
+    const handleManualSave = async () => {
+        const newOutfitItems = {
+            manual: manualIds.filter(id => id.trim() !== '').map(id => {
+                const item = items.find(i => i.id === id.trim().toUpperCase());
+                return item || { id: id.trim().toUpperCase(), image: null };
+            })
+        };
+
+        if (newOutfitItems.manual.length === 0) return;
+
+        const newOutfit = {
+            id: Date.now(),
+            date: new Date().toISOString(),
+            name: manualName || 'MANUAL LOOK',
+            items: newOutfitItems
+        };
+        
+        await dbHelper.save(STORE_OUTFITS, newOutfit);
+        setSavedOutfits([newOutfit, ...savedOutfits]);
+        setManualIds(['', '', '', '', '', '']); 
+        setManualName('');
+        alert("MANUAL OUTFIT SAVED!");
+    };
+
+    const renderGenerator = () => (
+        <div className="space-y-8">
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
+                
+                <div className="grid grid-cols-1 gap-4">
+                    <div className="relative">
+                        <select 
+                            className="w-full border-b border-gray-200 py-2 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                            value={customConditions.tempRange}
+                            onChange={e => setCustomConditions({...customConditions, tempRange: e.target.value})}
+                        >
+                            <option value="">TEMP RANGE</option>
+                            {TEMP_RANGES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select>
+                        <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="relative">
+                            <select 
+                                className="w-full border-b border-gray-200 py-2 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                                value={customConditions.weather || ''}
+                                onChange={e => setCustomConditions({...customConditions, weather: e.target.value})}
+                            >
+                                <option value="">WEATHER</option>
+                                {WEATHER_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                            </select>
+                            <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
+                        </div>
+
+                        <div className="relative">
+                            <select 
+                                className="w-full border-b border-gray-200 py-2 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
+                                value={customConditions.sensation || ''}
+                                onChange={e => setCustomConditions({...customConditions, sensation: e.target.value})}
+                            >
+                                <option value="">SENSATION</option>
+                                {SENSATION_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
+                            </select>
+                            <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CONTEXT</label>
+                <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                        {['INDOOR', 'OUTDOOR'].map(tag => (
+                            <button 
+                                key={tag} 
+                                onClick={() => setCustomConditions({...customConditions, environment: customConditions.environment === tag ? '' : tag})}
+                                className={`w-full py-1 text-[10px] uppercase border rounded-none ${customConditions.environment === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        {['ACTIVE', 'STATIC'].map(tag => (
+                             <button 
+                                key={tag} 
+                                onClick={() => setCustomConditions({...customConditions, activity: customConditions.activity === tag ? '' : tag})}
+                                className={`w-full py-1 text-[10px] uppercase border rounded-none ${customConditions.activity === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                        {PURPOSE_TAGS.map(tag => (
+                            <button 
+                                key={tag} 
+                                onClick={() => setCustomConditions({...customConditions, purpose: customConditions.purpose === tag ? '' : tag})}
+                                className={`w-full py-1 text-[10px] uppercase border rounded-none truncate ${customConditions.purpose === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">TARGET (SELECT ONE)</label>
+                <div className={`flex flex-wrap gap-2 transition-opacity ${customConditions.targetId ? 'opacity-30 pointer-events-none' : ''}`}>
+                    {COLOR_PALETTE.map(c => (
+                        <button key={c.name} onClick={() => setCustomConditions(prev => ({...prev, targetColor: prev.targetColor === c.value ? '' : c.value, targetId: ''}))} className={`w-8 h-8 aspect-square rounded-none border transition ${customConditions.targetColor === c.value ? 'ring-2 ring-black ring-inset' : 'border-gray-100'}`} style={{backgroundColor: c.value}} />
+                    ))}
+                </div>
+                <div className={`pt-2 transition-opacity ${customConditions.targetColor ? 'opacity-30' : ''}`}>
+                    <input type="text" placeholder="ENTER ITEM ID #" className="w-full border-b border-gray-200 py-2 text-sm font-mono outline-none uppercase placeholder-gray-300 rounded-none bg-transparent" value={customConditions.targetId} onChange={e => setCustomConditions(prev => ({...prev, targetId: e.target.value.toUpperCase(), targetColor: ''}))} onFocus={() => setCustomConditions(prev => ({...prev, targetColor: ''}))} />
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderSaved = () => (
+        <div className="space-y-8">
+             <div className="border-b border-gray-100 pb-6 space-y-4">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">ADD BY ID</span>
+                <div className="grid grid-cols-3 gap-2">
+                    {manualIds.map((id, idx) => (
+                         <input 
+                            key={idx}
+                            placeholder={`ID #${idx+1}`} 
+                            className="border-b border-gray-200 py-1 text-[10px] text-center uppercase rounded-none bg-transparent" 
+                            value={id} 
+                            onChange={e => {
+                                const newIds = [...manualIds];
+                                newIds[idx] = e.target.value;
+                                setManualIds(newIds);
+                            }} 
+                        />
+                    ))}
+                </div>
+                <input 
+                    placeholder="OUTFIT NAME" 
+                    className="w-full border-b border-gray-200 py-1 text-[10px] uppercase rounded-none bg-transparent" 
+                    value={manualName} 
+                    onChange={e => setManualName(e.target.value)} 
+                />
+                <button onClick={handleManualSave} className="w-full py-2 bg-black text-white text-[10px] font-bold uppercase rounded-none">SAVE MANUAL OUTFIT</button>
+             </div>
+
+            {savedOutfits.length === 0 ? (
+                <div className="text-center py-10 text-gray-300 text-xs">NO SAVED OUTFITS</div>
+            ) : (
+                savedOutfits.map(outfit => (
+                    <div key={outfit.id} className="border border-gray-100 p-4 relative group rounded-none">
+                        <button onClick={() => handleDeleteOutfit(outfit.id)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500"><X size={16}/></button>
+                        <div className="mb-2">
+                            <div className="text-sm font-bold uppercase">{outfit.name || 'UNTITLED'}</div>
+                            <div className="text-[9px] text-gray-400 font-mono">{new Date(outfit.date).toLocaleDateString()}</div>
+                        </div>
+                        
+                        <div className="grid grid-cols-4 gap-2">
+                             {Array.isArray(outfit.items.manual) ? (
+                                 outfit.items.manual.map((item, i) => (
+                                     <div key={i} className="aspect-square bg-gray-50 flex items-center justify-center border border-gray-50 rounded-none">
+                                         {item.image ? <img src={item.image} className="w-full h-full object-contain mix-blend-multiply"/> : <span className="text-[8px] text-gray-400">{item.id}</span>}
+                                     </div>
+                                 ))
+                             ) : (
+                                 <>
+                                     {['top', 'bottom', 'outer', 'shoes'].map(part => (
+                                         outfit.items[part] && (
+                                             <div key={part} className="aspect-square bg-gray-50 flex items-center justify-center border border-gray-50 rounded-none">
+                                                 {outfit.items[part].image ? <img src={outfit.items[part].image} className="w-full h-full object-contain mix-blend-multiply"/> : <span className="text-[8px] text-gray-400">{outfit.items[part].id}</span>}
+                                             </div>
+                                         )
+                                     ))}
+                                 </>
+                             )}
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
+    );
+
+    return (
+        <div className="h-full flex flex-col font-mono animate-fade-in relative">
+            <Header />
+            <div className="flex border-b border-gray-100">
+                 <button onClick={() => setActiveTab('GENERATOR')} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest ${activeTab === 'GENERATOR' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>GENERATOR</button>
+                 <button onClick={() => setActiveTab('SAVED')} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest ${activeTab === 'SAVED' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>FAVORITES</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 pb-48 hide-scrollbar">
+                {activeTab === 'GENERATOR' ? renderGenerator() : renderSaved()}
+            </div>
+            
+            {activeTab === 'GENERATOR' && (
+                <div className="absolute bottom-28 left-6 right-6 z-20">
+                    <button 
+                        onClick={generateOutfit} 
+                        className="w-full bg-black text-white py-2 text-[10px] font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 rounded-none"
+                    >
+                        <RefreshCw size={16} /> GENERATE OUTFIT
+                    </button>
+                </div>
+            )}
+
+            {showResultModal && generatedOutfit && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-6 backdrop-blur-sm">
+                    <div className="bg-white w-full max-w-sm flex flex-col shadow-2xl modal-slide-up max-h-[85vh] overflow-hidden rounded-none">
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-serif text-lg font-bold uppercase tracking-wide">YOUR OUTFIT</h3>
+                            <button onClick={() => { setShowResultModal(false); setGeneratedOutfit(null); }}><X size={24} /></button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
+                             <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="col-span-2 aspect-[4/3] bg-gray-50 flex items-center justify-center border border-gray-100 p-4 gap-4 rounded-none">
+                                    {generatedOutfit.top && <img src={generatedOutfit.top.image} className="h-full object-contain mix-blend-multiply" alt="top"/>}
+                                    {generatedOutfit.outer && <img src={generatedOutfit.outer.image} className="h-full object-contain mix-blend-multiply" alt="outer"/>}
+                                </div>
+                                {generatedOutfit.bottom && <div className="aspect-square bg-gray-50 border border-gray-100 p-2 rounded-none"><img src={generatedOutfit.bottom.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
+                                {generatedOutfit.shoes && <div className="aspect-square bg-gray-50 border border-gray-100 p-2 rounded-none"><img src={generatedOutfit.shoes.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">NAME THIS LOOK</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="E.G. RAINY DAY OFFICE" 
+                                    className="w-full border-b border-gray-200 py-2 text-sm font-mono outline-none uppercase placeholder-gray-300 rounded-none bg-transparent" 
+                                    value={outfitName} 
+                                    onChange={e => setOutfitName(e.target.value)} 
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t border-gray-100 pb-safe">
+                            <button onClick={handleSaveGenerated} className="w-full py-3 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-900 rounded-none flex items-center justify-center gap-2">
+                                <Heart size={14} /> SAVE THIS LOOK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AppContent = () => {
+    // ... Paste full AppContent logic here ...
     const [items, setItems] = useState(() => {
         try {
             const saved = localStorage.getItem('wardrobe_items_v5');
@@ -1158,7 +1433,6 @@ const AppContent = () => {
 };
 
 // --- Main App Component ---
-// [v6.9.1 fix] Ensure AppContent is defined before App
 export default function App() {
   return (
     <div className="bg-white h-[100dvh] w-full flex justify-center text-black selection:bg-gray-200 overflow-hidden">
