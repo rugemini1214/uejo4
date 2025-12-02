@@ -1,16 +1,29 @@
-# React + Vite
+# My Walk-in Closet
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+1. 為個人衣櫃管理的 PWA (漸進式網頁應用程式) 小工具
+2. 所有資料皆儲存於使用者裝置的瀏覽器資料庫中，不經過任何雲端伺服器
 
-Currently, two official plugins are available:
+## ✨ 功能特色
+1. 衣櫃管理
+2. 穿搭生成器
+3. 統計與整理
+4. PWA 離線技術
+5. 資料備份、回復
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🛠️ 技術說明
+1. 框架：React 18
+2. 儲存：使用瀏覽器 IndexedDB，資料完全存於您的手機中
+3. 隱私：無後端資料庫，不追蹤、不上傳任何個人數據至伺服器
 
-## React Compiler
+## 🚀 如何安裝與使用
+1. 在手機瀏覽器 (Safari/Chrome) 開啟該網址
+2. iOS (Safari)：點擊分享按鈕 ->「加入主畫面」
+3. Android (Chrome)：點擊選單 ->「安裝應用程式」或「加到主畫面」
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📝 備註
+1. 由於資料僅儲存於瀏覽器快取，清除瀏覽器資料會導致資料消失
+2. 建議定期使用「備份」功能
 
-## Expanding the ESLint configuration
+此專案代碼由 Google Gemini 生成與優化
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Designed for personal travel use.
