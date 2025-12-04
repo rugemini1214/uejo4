@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Plus, Shirt, Search, X, RefreshCw, Camera, 
-  LayoutGrid, ListFilter, ChevronDown, Download, Upload, ChevronRight, BarChart3, Heart, Sparkles, Star
+  Plus, Shirt, Search, X, Camera, 
+  LayoutGrid, ChevronDown, Download, Upload, BarChart3, Star
 } from 'lucide-react';
 
 // --- 版本設定 ---
-const APP_VERSION = 'v6.10';
+const APP_VERSION = 'v6.14';
 
 // --- 全域樣式與字體設定 ---
 const GlobalStyles = () => (
@@ -67,7 +67,6 @@ const GlobalStyles = () => (
 const DB_NAME = 'WardrobeDB';
 const DB_VERSION = 2;
 const STORE_ITEMS = 'items';
-const STORE_OUTFITS = 'outfits';
 
 const dbHelper = {
   open: () => {
@@ -77,9 +76,6 @@ const dbHelper = {
         const db = event.target.result;
         if (!db.objectStoreNames.contains(STORE_ITEMS)) {
           db.createObjectStore(STORE_ITEMS, { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains(STORE_OUTFITS)) {
-          db.createObjectStore(STORE_OUTFITS, { keyPath: 'id' });
         }
       };
       request.onsuccess = () => resolve(request.result);
@@ -200,23 +196,12 @@ const CATEGORY_CONFIG = [
 
 const THICKNESS_OPTIONS = ['THIN', 'MEDIUM', 'THICK', 'WARM'];
 const STYLE_OPTIONS = ['CASUAL', 'FORMAL', 'SPORT', 'PARTY', 'HOME'];
+const SEASON_OPTIONS = ['SPRING', 'SUMMER', 'AUTUMN', 'WINTER', 'ALL'];
 
 const MATERIALS_LIST = [
     'COTTON', 'POLYESTER', 'WOOL', 'LINEN', 'SILK', 'LEATHER', 
     'DENIM', 'NYLON', 'SPANDEX', 'RAYON', 'ACRYLIC', 'CASHMERE', 'OTHER'
 ];
-
-const TEMP_RANGES = [
-    { label: '0-10°C', value: 'freezing' },
-    { label: '10-20°C', value: 'cold' },
-    { label: '20-30°C', value: 'warm' },
-    { label: '30°C+', value: 'hot' },
-];
-const WEATHER_TAGS = ['SUNNY', 'CLOUDY', 'RAINY', 'WINDY', 'SNOWY'];
-const SENSATION_TAGS = ['MUGGY', 'COMFY', 'COOL', 'CHILLY', 'DRY'];
-const ENVIRONMENT_OPTIONS = ['INDOOR', 'OUTDOOR'];
-const ACTIVITY_OPTIONS = ['ACTIVE', 'STATIC'];
-const PURPOSE_TAGS = ['FORMAL', 'CASUAL', 'DATE', 'PARTY'];
 
 const COLOR_PALETTE = [
     { name: 'Black', value: '#000000' }, { name: 'White', value: '#ffffff' },
@@ -548,11 +533,8 @@ const WardrobePage = ({ items, activeCategory, setActiveCategory, resetForm, set
     );
 };
 
-const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, stats, openEdit, onExport, onImport, brandFilter, setBrandFilter }) => {
-    const [showStatsModal, setShowStatsModal] = useState(false);
-    const currentYear = new Date().getFullYear().toString();
-
-    const isFiltering = searchQuery !== '' || ratingFilter !== 0 || colorFilter !== '' || brandFilter !== '';
+const SearchPage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRatingFilter, colorFilter, setColorFilter, brandFilter, setBrandFilter, seasonFilter, setSeasonFilter, thicknessFilter, setThicknessFilter, stats, openEdit }) => {
+    const isFiltering = searchQuery !== '' || ratingFilter !== 0 || colorFilter !== '' || brandFilter !== '' || seasonFilter !== '' || thicknessFilter !== '';
 
     const filteredItems = items.filter(item => {
         const matchSearch = searchQuery === '' || 
@@ -561,16 +543,9 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
         const matchRating = ratingFilter === 0 || item.rating === ratingFilter;
         const matchColor = colorFilter === '' || item.color === colorFilter;
         const matchBrand = brandFilter === '' || (item.source && item.source === brandFilter);
-        return matchSearch && matchRating && matchColor && matchBrand;
-    });
-
-    const currentYearExpense = stats.sortedExpenses.find(([year]) => year === currentYear)?.[1] || 0;
-    const topBrand = stats.sortedSources.length > 0 ? stats.sortedSources[0] : ['NONE', 0];
-
-    const last5YearsStats = stats.sortedExpenses.filter(([year]) => {
-        const y = parseInt(year);
-        const cur = new Date().getFullYear();
-        return y <= cur && y > cur - 5;
+        const matchSeason = seasonFilter === '' || item.season === seasonFilter;
+        const matchThickness = thicknessFilter === '' || item.thickness === thicknessFilter;
+        return matchSearch && matchRating && matchColor && matchBrand && matchSeason && matchThickness;
     });
 
     return (
@@ -612,17 +587,39 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
 
                     <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">RATING</span>
-                            {ratingFilter !== 0 && <button onClick={() => setRatingFilter(0)} className="text-black text-[9px] underline uppercase">CLEAR</button>}
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                SEASON
+                                {seasonFilter && <button onClick={() => setSeasonFilter('')} className="text-black text-[9px] underline uppercase">CLEAR</button>}
+                            </span>
                         </div>
-                        <div className="flex gap-2">
-                            {[1,2,3,4,5].map(r => (
+                        <div className="flex gap-2 overflow-x-auto hide-scrollbar w-full pb-1">
+                            {SEASON_OPTIONS.map(s => (
                                 <button 
-                                  key={r} 
-                                  onClick={() => setRatingFilter(ratingFilter === r ? 0 : r)}
-                                  className={`flex-1 py-1 text-[10px] border transition rounded-none ${ratingFilter===r ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-400 hover:border-gray-400'}`}
+                                  key={s} 
+                                  onClick={() => setSeasonFilter(seasonFilter === s ? '' : s)}
+                                  className={`px-3 py-1 text-[9px] border uppercase whitespace-nowrap rounded-none transition ${seasonFilter === s ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
                                 >
-                                  {r}
+                                  {s}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                THICKNESS
+                                {thicknessFilter && <button onClick={() => setThicknessFilter('')} className="text-black text-[9px] underline uppercase">CLEAR</button>}
+                            </span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto hide-scrollbar w-full pb-1">
+                            {THICKNESS_OPTIONS.map(t => (
+                                <button 
+                                  key={t} 
+                                  onClick={() => setThicknessFilter(thicknessFilter === t ? '' : t)}
+                                  className={`px-3 py-1 text-[9px] border uppercase whitespace-nowrap rounded-none transition ${thicknessFilter === t ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
+                                >
+                                  {t}
                                 </button>
                             ))}
                         </div>
@@ -652,47 +649,9 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
 
             <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
                 {!isFiltering ? (
-                    <div className="space-y-4 animate-fade-in">
-                        <div className="border border-black p-4 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 bg-black text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-widest">
-                                ANNUAL REPORT
-                            </div>
-                            
-                            <div className="mt-2 space-y-4">
-                                <div className="space-y-1">
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">{currentYear} TOTAL SPENT</span>
-                                    <div className="text-3xl font-serif font-bold tracking-tight">NT${currentYearExpense.toLocaleString()}</div>
-                                </div>
-                                
-                                <div className="space-y-1">
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">MOST LOVED BRAND</span>
-                                    <div className="flex items-baseline gap-3">
-                                        <div className="text-xl font-bold uppercase truncate">{topBrand[0]}</div>
-                                        <div className="text-[10px] bg-black text-white px-2 py-0.5 rounded-none whitespace-nowrap">{topBrand[1]} ITEMS</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button 
-                                onClick={() => setShowStatsModal(true)}
-                                className="w-full py-2 mt-3 border-t border-gray-100 flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-50 transition"
-                            >
-                                VIEW DETAILS <ChevronRight size={12} />
-                            </button>
-                        </div>
-
-                        <div className="pt-2 border-t border-gray-100">
-                            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">DATA MANAGEMENT</h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button onClick={onExport} className="flex items-center justify-center gap-2 py-2 border border-black text-black text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition rounded-none">
-                                    <Download size={12} /> EXPORT
-                                </button>
-                                <label className="flex items-center justify-center gap-2 py-2 border border-black bg-black text-white text-[10px] font-bold uppercase tracking-widest hover:opacity-80 transition cursor-pointer rounded-none">
-                                    <Upload size={12} /> IMPORT
-                                    <input type="file" accept=".json" onChange={onImport} className="hidden" />
-                                </label>
-                            </div>
-                        </div>
+                    <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-4">
+                        <Search size={48} strokeWidth={1} />
+                        <span className="text-xs uppercase tracking-widest font-bold">START SEARCHING</span>
                     </div>
                 ) : (
                     <>
@@ -720,347 +679,95 @@ const OrganizePage = ({ items, searchQuery, setSearchQuery, ratingFilter, setRat
                     </>
                 )}
             </div>
-
-            {showStatsModal && (
-                <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-6 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-sm h-[85vh] sm:h-auto sm:max-h-[80vh] flex flex-col shadow-2xl modal-slide-up">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <BarChart3 size={20} />
-                                <h3 className="font-serif text-xl font-bold uppercase tracking-wide">STATISTICS</h3>
-                            </div>
-                            <button onClick={() => setShowStatsModal(false)}><X size={24} /></button>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8 font-mono hide-scrollbar">
-                            <div>
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-gray-400">LAST 5 YEARS EXPENSE</h4>
-                                <div className="space-y-3">
-                                    {last5YearsStats.map(([year, total]) => (
-                                        <div key={year} className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                            <span className="text-sm font-bold">{year}</span>
-                                            <span className="text-sm text-gray-600">NT${total.toLocaleString()}</span>
-                                        </div>
-                                    ))}
-                                    {last5YearsStats.length === 0 && <div className="text-xs text-gray-300 text-center py-4">NO DATA AVAILABLE</div>}
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-gray-400">TOP 5 BRANDS</h4>
-                                <div className="space-y-3">
-                                    {stats.sortedSources.slice(0, 5).map(([name, count], index) => (
-                                        <div key={name} className="flex justify-between items-center border-b border-gray-50 pb-2">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-xs font-bold text-gray-300 w-4">{index + 1}</span>
-                                                <span className="text-sm font-bold">{name}</span>
-                                            </div>
-                                            <span className="text-xs bg-black text-white px-2 py-0.5 rounded-none">{count} ITEMS</span>
-                                        </div>
-                                    ))}
-                                    {stats.sortedSources.length === 0 && <div className="text-xs text-gray-300 text-center py-4">NO DATA AVAILABLE</div>}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div className="p-4 border-t border-gray-100 pb-safe">
-                            <button onClick={() => setShowStatsModal(false)} className="w-full py-4 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-900 rounded-none">
-                                CLOSE
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
 
-const OutfitPage = ({ customConditions, setCustomConditions, generatedOutfit, setGeneratedOutfit, generateOutfit, isColorSimilar, savedOutfits, setSavedOutfits, handleSaveOutfit, handleDeleteOutfit, items }) => {
-    const [activeTab, setActiveTab] = useState('GENERATOR');
-    const [manualIds, setManualIds] = useState(['', '', '', '', '', '']);
-    const [manualName, setManualName] = useState('');
-    const [showResultModal, setShowResultModal] = useState(false);
-    const [outfitName, setOutfitName] = useState('');
+const StatsPage = ({ stats, onExport, onImport }) => {
+    const currentYear = new Date().getFullYear().toString();
+    const currentYearExpense = stats.sortedExpenses.find(([year]) => year === currentYear)?.[1] || 0;
+    const topBrand = stats.sortedSources.length > 0 ? stats.sortedSources[0] : ['NONE', 0];
 
-    useEffect(() => {
-        if(generatedOutfit) {
-            setOutfitName('');
-            setShowResultModal(true);
-        }
-    }, [generatedOutfit]);
-
-    const handleSaveGenerated = async () => {
-        if (!generatedOutfit) return;
-        const newOutfit = {
-            id: Date.now(), 
-            date: new Date().toISOString(),
-            name: outfitName || 'UNTITLED LOOK',
-            items: generatedOutfit
-        };
-        
-        await dbHelper.save(STORE_OUTFITS, newOutfit);
-        setSavedOutfits([newOutfit, ...savedOutfits]);
-        setShowResultModal(false);
-        setGeneratedOutfit(null);
-        alert("OUTFIT SAVED!");
-    };
-
-    const handleManualSave = async () => {
-        const newOutfitItems = {
-            manual: manualIds.filter(id => id.trim() !== '').map(id => {
-                const item = items.find(i => i.id === id.trim().toUpperCase());
-                return item || { id: id.trim().toUpperCase(), image: null };
-            })
-        };
-
-        if (newOutfitItems.manual.length === 0) return;
-
-        const newOutfit = {
-            id: Date.now(),
-            date: new Date().toISOString(),
-            name: manualName || 'MANUAL LOOK',
-            items: newOutfitItems
-        };
-        
-        await dbHelper.save(STORE_OUTFITS, newOutfit);
-        setSavedOutfits([newOutfit, ...savedOutfits]);
-        setManualIds(['', '', '', '', '', '']); 
-        setManualName('');
-        alert("MANUAL OUTFIT SAVED!");
-    };
-
-    const renderGenerator = () => (
-        <div className="space-y-8">
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">WEATHER & SENSATION</label>
-                
-                <div className="grid grid-cols-1 gap-4">
-                    <div className="relative">
-                        <select 
-                            className="w-full border-b border-gray-200 py-2 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
-                            value={customConditions.tempRange}
-                            onChange={e => setCustomConditions({...customConditions, tempRange: e.target.value})}
-                        >
-                            <option value="">TEMP RANGE</option>
-                            {TEMP_RANGES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                        </select>
-                        <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="relative">
-                            <select 
-                                className="w-full border-b border-gray-200 py-2 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
-                                value={customConditions.weather || ''}
-                                onChange={e => setCustomConditions({...customConditions, weather: e.target.value})}
-                            >
-                                <option value="">WEATHER</option>
-                                {WEATHER_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
-                            </select>
-                            <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
-                        </div>
-
-                        <div className="relative">
-                            <select 
-                                className="w-full border-b border-gray-200 py-2 bg-transparent text-[10px] font-bold outline-none uppercase appearance-none rounded-none"
-                                value={customConditions.sensation || ''}
-                                onChange={e => setCustomConditions({...customConditions, sensation: e.target.value})}
-                            >
-                                <option value="">SENSATION</option>
-                                {SENSATION_TAGS.map(tag => <option key={tag} value={tag}>{tag}</option>)}
-                            </select>
-                            <div className="absolute right-0 top-2 pointer-events-none text-gray-400"><ChevronDown size={14}/></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">CONTEXT</label>
-                <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                        {['INDOOR', 'OUTDOOR'].map(tag => (
-                            <button 
-                                key={tag} 
-                                onClick={() => setCustomConditions({...customConditions, environment: customConditions.environment === tag ? '' : tag})}
-                                className={`w-full py-1 text-[10px] uppercase border rounded-none ${customConditions.environment === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                        {['ACTIVE', 'STATIC'].map(tag => (
-                             <button 
-                                key={tag} 
-                                onClick={() => setCustomConditions({...customConditions, activity: customConditions.activity === tag ? '' : tag})}
-                                className={`w-full py-1 text-[10px] uppercase border rounded-none ${customConditions.activity === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-2">
-                        {PURPOSE_TAGS.map(tag => (
-                            <button 
-                                key={tag} 
-                                onClick={() => setCustomConditions({...customConditions, purpose: customConditions.purpose === tag ? '' : tag})}
-                                className={`w-full py-1 text-[10px] uppercase border rounded-none truncate ${customConditions.purpose === tag ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">TARGET (SELECT ONE)</label>
-                <div className={`flex flex-wrap gap-2 transition-opacity ${customConditions.targetId ? 'opacity-30 pointer-events-none' : ''}`}>
-                    {COLOR_PALETTE.map(c => (
-                        <button key={c.name} onClick={() => setCustomConditions(prev => ({...prev, targetColor: prev.targetColor === c.value ? '' : c.value, targetId: ''}))} className={`w-8 h-8 aspect-square rounded-none border transition ${customConditions.targetColor === c.value ? 'ring-2 ring-black ring-inset' : 'border-gray-100'}`} style={{backgroundColor: c.value}} />
-                    ))}
-                </div>
-                <div className={`pt-2 transition-opacity ${customConditions.targetColor ? 'opacity-30' : ''}`}>
-                    <input type="text" placeholder="ENTER ITEM ID #" className="w-full border-b border-gray-200 py-2 text-sm font-mono outline-none uppercase placeholder-gray-300 rounded-none bg-transparent" value={customConditions.targetId} onChange={e => setCustomConditions(prev => ({...prev, targetId: e.target.value.toUpperCase(), targetColor: ''}))} onFocus={() => setCustomConditions(prev => ({...prev, targetColor: ''}))} />
-                </div>
-            </div>
-        </div>
-    );
-
-    const renderSaved = () => (
-        <div className="space-y-8">
-             <div className="border-b border-gray-100 pb-6 space-y-4">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">ADD BY ID</span>
-                <div className="grid grid-cols-3 gap-2">
-                    {manualIds.map((id, idx) => (
-                         <input 
-                            key={idx}
-                            placeholder={`ID #${idx+1}`} 
-                            className="border-b border-gray-200 py-1 text-[10px] text-center uppercase rounded-none bg-transparent" 
-                            value={id} 
-                            onChange={e => {
-                                const newIds = [...manualIds];
-                                newIds[idx] = e.target.value;
-                                setManualIds(newIds);
-                            }} 
-                        />
-                    ))}
-                </div>
-                <input 
-                    placeholder="OUTFIT NAME" 
-                    className="w-full border-b border-gray-200 py-1 text-[10px] uppercase rounded-none bg-transparent" 
-                    value={manualName} 
-                    onChange={e => setManualName(e.target.value)} 
-                />
-                <button onClick={handleManualSave} className="w-full py-2 bg-black text-white text-[10px] font-bold uppercase rounded-none">SAVE MANUAL OUTFIT</button>
-             </div>
-
-            {savedOutfits.length === 0 ? (
-                <div className="text-center py-10 text-gray-300 text-xs">NO SAVED OUTFITS</div>
-            ) : (
-                savedOutfits.map(outfit => (
-                    <div key={outfit.id} className="border border-gray-100 p-4 relative group rounded-none">
-                        <button onClick={() => handleDeleteOutfit(outfit.id)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500"><X size={16}/></button>
-                        <div className="mb-2">
-                            <div className="text-sm font-bold uppercase">{outfit.name || 'UNTITLED'}</div>
-                            <div className="text-[9px] text-gray-400 font-mono">{new Date(outfit.date).toLocaleDateString()}</div>
-                        </div>
-                        
-                        <div className="grid grid-cols-4 gap-2">
-                             {Array.isArray(outfit.items.manual) ? (
-                                 outfit.items.manual.map((item, i) => (
-                                     <div key={i} className="aspect-square bg-gray-50 flex items-center justify-center border border-gray-50 rounded-none">
-                                         {item.image ? <img src={item.image} className="w-full h-full object-contain mix-blend-multiply"/> : <span className="text-[8px] text-gray-400">{item.id}</span>}
-                                     </div>
-                                 ))
-                             ) : (
-                                 <>
-                                     {['top', 'bottom', 'outer', 'shoes'].map(part => (
-                                         outfit.items[part] && (
-                                             <div key={part} className="aspect-square bg-gray-50 flex items-center justify-center border border-gray-50 rounded-none">
-                                                 {outfit.items[part].image ? <img src={outfit.items[part].image} className="w-full h-full object-contain mix-blend-multiply"/> : <span className="text-[8px] text-gray-400">{outfit.items[part].id}</span>}
-                                             </div>
-                                         )
-                                     ))}
-                                 </>
-                             )}
-                        </div>
-                    </div>
-                ))
-            )}
-        </div>
-    );
+    const last5YearsStats = stats.sortedExpenses.filter(([year]) => {
+        const y = parseInt(year);
+        const cur = new Date().getFullYear();
+        return y <= cur && y > cur - 5;
+    });
 
     return (
-        <div className="h-full flex flex-col font-mono animate-fade-in relative">
+        <div className="h-full flex flex-col font-mono animate-fade-in">
             <Header />
-            <div className="flex border-b border-gray-100">
-                 <button onClick={() => setActiveTab('GENERATOR')} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest ${activeTab === 'GENERATOR' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>GENERATOR</button>
-                 <button onClick={() => setActiveTab('SAVED')} className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest ${activeTab === 'SAVED' ? 'text-black border-b-2 border-black' : 'text-gray-300'}`}>FAVORITES</button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 pb-48 hide-scrollbar">
-                {activeTab === 'GENERATOR' ? renderGenerator() : renderSaved()}
-            </div>
-            
-            {activeTab === 'GENERATOR' && (
-                <div className="absolute bottom-28 left-6 right-6 z-20">
-                    <button 
-                        onClick={generateOutfit} 
-                        className="w-full bg-black text-white py-2 text-[10px] font-bold uppercase tracking-widest shadow-xl hover:bg-gray-900 transition flex items-center justify-center gap-2 rounded-none"
-                    >
-                        <RefreshCw size={16} /> GENERATE OUTFIT
-                    </button>
-                </div>
-            )}
-
-            {showResultModal && generatedOutfit && (
-                <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-6 backdrop-blur-sm">
-                    <div className="bg-white w-full max-w-sm flex flex-col shadow-2xl modal-slide-up max-h-[85vh] overflow-hidden rounded-none">
-                        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="font-serif text-lg font-bold uppercase tracking-wide">YOUR OUTFIT</h3>
-                            <button onClick={() => { setShowResultModal(false); setGeneratedOutfit(null); }}><X size={24} /></button>
+            <div className="flex-1 overflow-y-auto p-6 pb-32 hide-scrollbar">
+                <div className="space-y-4 animate-fade-in">
+                    <div className="border border-black p-4 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 bg-black text-white text-[9px] font-bold px-2 py-0.5 uppercase tracking-widest">
+                            ANNUAL REPORT
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
-                             <div className="grid grid-cols-2 gap-4 mb-6">
-                                <div className="col-span-2 aspect-[4/3] bg-gray-50 flex items-center justify-center border border-gray-100 p-4 gap-4 rounded-none">
-                                    {generatedOutfit.top && <img src={generatedOutfit.top.image} className="h-full object-contain mix-blend-multiply" alt="top"/>}
-                                    {generatedOutfit.outer && <img src={generatedOutfit.outer.image} className="h-full object-contain mix-blend-multiply" alt="outer"/>}
-                                </div>
-                                {generatedOutfit.bottom && <div className="aspect-square bg-gray-50 border border-gray-100 p-2 rounded-none"><img src={generatedOutfit.bottom.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
-                                {generatedOutfit.shoes && <div className="aspect-square bg-gray-50 border border-gray-100 p-2 rounded-none"><img src={generatedOutfit.shoes.image} className="w-full h-full object-contain mix-blend-multiply"/></div>}
+                        <div className="mt-2 space-y-4">
+                            <div className="space-y-1">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">{currentYear} TOTAL SPENT</span>
+                                <div className="text-3xl font-serif font-bold tracking-tight">NT${currentYearExpense.toLocaleString()}</div>
                             </div>
                             
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">NAME THIS LOOK</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="E.G. RAINY DAY OFFICE" 
-                                    className="w-full border-b border-gray-200 py-2 text-sm font-mono outline-none uppercase placeholder-gray-300 rounded-none bg-transparent" 
-                                    value={outfitName} 
-                                    onChange={e => setOutfitName(e.target.value)} 
-                                />
+                            <div className="space-y-1">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">MOST LOVED BRAND</span>
+                                <div className="flex items-baseline gap-3">
+                                    <div className="text-xl font-bold uppercase truncate">{topBrand[0]}</div>
+                                    <div className="text-[10px] bg-black text-white px-2 py-0.5 rounded-none whitespace-nowrap">{topBrand[1]} ITEMS</div>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div className="p-4 border-t border-gray-100 pb-safe">
-                            <button onClick={handleSaveGenerated} className="w-full py-3 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-900 rounded-none flex items-center justify-center gap-2">
-                                <Heart size={14} /> SAVE THIS LOOK
+                    <div className="py-6">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-gray-400">LAST 5 YEARS EXPENSE</h4>
+                        <div className="space-y-3">
+                            {last5YearsStats.map(([year, total]) => (
+                                <div key={year} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                                    <span className="text-sm font-bold">{year}</span>
+                                    <span className="text-sm text-gray-600">NT${total.toLocaleString()}</span>
+                                </div>
+                            ))}
+                            {last5YearsStats.length === 0 && <div className="text-xs text-gray-300 text-center py-4">NO DATA AVAILABLE</div>}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-gray-400">TOP 5 BRANDS</h4>
+                        <div className="space-y-3">
+                            {stats.sortedSources.slice(0, 5).map(([name, count], index) => (
+                                <div key={name} className="flex justify-between items-center border-b border-gray-50 pb-2">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-bold text-gray-300 w-4">{index + 1}</span>
+                                        <span className="text-sm font-bold">{name}</span>
+                                    </div>
+                                    <span className="text-xs bg-black text-white px-2 py-0.5 rounded-none">{count} ITEMS</span>
+                                </div>
+                            ))}
+                            {stats.sortedSources.length === 0 && <div className="text-xs text-gray-300 text-center py-4">NO DATA AVAILABLE</div>}
+                        </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-gray-100">
+                        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">DATA MANAGEMENT</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={onExport} className="flex items-center justify-center gap-2 py-2 border border-black text-black text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition rounded-none">
+                                <Download size={12} /> EXPORT
                             </button>
+                            <label className="flex items-center justify-center gap-2 py-2 border border-black bg-black text-white text-[10px] font-bold uppercase tracking-widest hover:opacity-80 transition cursor-pointer rounded-none">
+                                <Upload size={12} /> IMPORT
+                                <input type="file" accept=".json" onChange={onImport} className="hidden" />
+                            </label>
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
 
 const AppContent = () => {
-    // ... Paste full AppContent logic here ...
     const [items, setItems] = useState(() => {
         try {
             const saved = localStorage.getItem('wardrobe_items_v5');
@@ -1082,20 +789,13 @@ const AppContent = () => {
         source: '', price: '', note: ''
     });
 
-    // Outfit Generator State
-    const [customConditions, setCustomConditions] = useState({
-        tempRange: '', weather: '', sensation: '', 
-        environment: '', activity: '', purpose: '', 
-        targetColor: '', targetId: '' 
-    });
-    const [generatedOutfit, setGeneratedOutfit] = useState(null);
-    const [savedOutfits, setSavedOutfits] = useState([]);
-
     // Organize State
     const [searchQuery, setSearchQuery] = useState('');
     const [ratingFilter, setRatingFilter] = useState(0); 
     const [colorFilter, setColorFilter] = useState(''); 
     const [brandFilter, setBrandFilter] = useState('');
+    const [seasonFilter, setSeasonFilter] = useState('');
+    const [thicknessFilter, setThicknessFilter] = useState('');
 
     useEffect(() => {
       const initData = async () => {
@@ -1114,9 +814,6 @@ const AppContent = () => {
               }
             }
           }
-          const dbOutfits = await dbHelper.getAll(STORE_OUTFITS);
-          if(dbOutfits) setSavedOutfits(dbOutfits);
-
         } catch (err) {
           console.error("DB Init Failed:", err);
         }
@@ -1184,12 +881,15 @@ const AppContent = () => {
     const generateId = (categoryFull) => {
         const catConfig = CATEGORY_CONFIG.find(c => c.full === categoryFull);
         const code = catConfig ? catConfig.code : 'X';
-        const existingIds = items
+        const existingNumbers = new Set(items
             .filter(i => i.id.startsWith(code))
             .map(i => parseInt(i.id.substring(1)))
-            .filter(n => !isNaN(n));
-        const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
-        const nextId = maxId + 1;
+            .filter(n => !isNaN(n)));
+        
+        let nextId = 1;
+        while (existingNumbers.has(nextId)) {
+            nextId++;
+        }
         return `${code}${nextId.toString().padStart(2, '0')}`;
     };
 
@@ -1256,87 +956,6 @@ const AppContent = () => {
         setView('edit');
     };
 
-    const handleSaveOutfit = async () => {
-        if (!generatedOutfit) return;
-        const newOutfit = {
-            id: Date.now(), 
-            date: new Date().toISOString(),
-            items: generatedOutfit
-        };
-        
-        await dbHelper.save(STORE_OUTFITS, newOutfit);
-        setSavedOutfits([newOutfit, ...savedOutfits]);
-        alert("OUTFIT SAVED!");
-    };
-
-    const handleDeleteOutfit = async (id) => {
-        if(window.confirm("REMOVE THIS OUTFIT?")) {
-            await dbHelper.delete(STORE_OUTFITS, id);
-            setSavedOutfits(savedOutfits.filter(o => o.id !== id));
-        }
-    };
-
-    const isColorSimilar = (hex1, hex2) => hex1 && hex2 && hex1.toLowerCase() === hex2.toLowerCase(); 
-
-    const generateOutfit = () => {
-        let pool = [...items];
-        let picks = { top: null, bottom: null, shoes: null, outer: null };
-
-        if (customConditions.targetId) {
-            const t = items.find(i => i.id.toString() === customConditions.targetId);
-            if (t) {
-                if (t.category === 'TOPS') picks.top = t;
-                if (t.category === 'BOTTOMS') picks.bottom = t;
-                if (t.category === 'SHOES') picks.shoes = t;
-                if (t.category === 'OUTER') picks.outer = t;
-            }
-        } else if (customConditions.targetColor) {
-            const matches = pool.filter(i => isColorSimilar(i.color, customConditions.targetColor));
-            if(matches.length > 0) {
-                const m = matches[Math.floor(Math.random()*matches.length)];
-                if(m.category === 'TOPS' && !picks.top) picks.top = m;
-                else if(m.category === 'BOTTOMS' && !picks.bottom) picks.bottom = m;
-                else if(m.category === 'SHOES' && !picks.shoes) picks.shoes = m;
-                else if(m.category === 'OUTER' && !picks.outer) picks.outer = m;
-            }
-        }
-
-        const { tempRange, sensation, weather, activity, purpose } = customConditions;
-        
-        if(tempRange === 'freezing' || sensation === 'CHILLY' || sensation === 'COOL' || weather === 'SNOWY') {
-            pool = pool.filter(i => i.thickness === 'THICK' || i.thickness === 'WARM' || i.category === 'OUTER');
-        } else if ((tempRange === 'hot' || sensation === 'MUGGY') && weather !== 'SNOWY') {
-            pool = pool.filter(i => i.thickness === 'THIN' && i.category !== 'OUTER');
-        }
-
-        if (purpose) {
-            if (purpose === 'FORMAL') {
-                pool = pool.filter(i => i.style === 'FORMAL' || i.style === 'PARTY' || !i.style); 
-            } else if (purpose === 'CASUAL' || purpose === 'DATE') {
-                pool = pool.filter(i => i.style !== 'HOME');
-            }
-        }
-        
-        if (activity === 'ACTIVE') {
-            pool = pool.filter(i => i.style === 'SPORT' || i.style === 'CASUAL' || !i.style);
-        }
-
-        const tops = pool.filter(i => i.category === 'TOPS' || i.category === 'DRESS');
-        const bottoms = pool.filter(i => i.category === 'BOTTOMS');
-        const shoes = items.filter(i => i.category === 'SHOES');
-        const outers = pool.filter(i => i.category === 'OUTER');
-        
-        if(!picks.top && tops.length > 0) picks.top = tops[Math.floor(Math.random() * tops.length)];
-        if(!picks.bottom && picks.top?.category !== 'DRESS' && bottoms.length > 0) picks.bottom = bottoms[Math.floor(Math.random() * bottoms.length)];
-        if(!picks.shoes && shoes.length > 0) picks.shoes = shoes[Math.floor(Math.random() * shoes.length)];
-        
-        if(!picks.outer && outers.length > 0) {
-            const isCold = customConditions.tempRange === 'freezing' || customConditions.tempRange === 'cold' || customConditions.sensation === 'CHILLY';
-            if(isCold || Math.random() > 0.7) picks.outer = outers[Math.floor(Math.random() * outers.length)];
-        }
-        setGeneratedOutfit(picks);
-    };
-
     const statsData = useMemo(() => {
         const expenses = {};
         const sources = {};
@@ -1381,8 +1000,8 @@ const AppContent = () => {
                                 openEdit={openEdit}
                             />
                         }
-                        {view === 'organize' && 
-                            <OrganizePage 
+                        {view === 'search' && 
+                            <SearchPage 
                                 items={items} 
                                 searchQuery={searchQuery} 
                                 setSearchQuery={setSearchQuery} 
@@ -1392,25 +1011,19 @@ const AppContent = () => {
                                 setColorFilter={setColorFilter} 
                                 brandFilter={brandFilter}
                                 setBrandFilter={setBrandFilter}
+                                seasonFilter={seasonFilter}
+                                setSeasonFilter={setSeasonFilter}
+                                thicknessFilter={thicknessFilter}
+                                setThicknessFilter={setThicknessFilter}
                                 stats={statsData} 
                                 openEdit={openEdit}
-                                onExport={handleExportData}
-                                onImport={handleImportData}
                             />
                         }
-                        {view === 'outfit' && 
-                            <OutfitPage 
-                                customConditions={customConditions} 
-                                setCustomConditions={setCustomConditions} 
-                                generatedOutfit={generatedOutfit} 
-                                setGeneratedOutfit={setGeneratedOutfit} 
-                                generateOutfit={generateOutfit} 
-                                isColorSimilar={isColorSimilar}
-                                savedOutfits={savedOutfits}
-                                setSavedOutfits={setSavedOutfits}
-                                handleSaveOutfit={handleSaveOutfit}
-                                handleDeleteOutfit={handleDeleteOutfit}
-                                items={items}
+                        {view === 'stats' && 
+                            <StatsPage 
+                                stats={statsData} 
+                                onExport={handleExportData}
+                                onImport={handleImportData}
                             />
                         }
                     </div>
@@ -1419,11 +1032,11 @@ const AppContent = () => {
                         <button onClick={() => setView('wardrobe')} className={`flex flex-col items-center gap-1 transition ${view === 'wardrobe' ? 'text-black' : 'hover:text-gray-600'}`}>
                             <LayoutGrid size={20} strokeWidth={1.5} /> WARDROBE
                         </button>
-                        <button onClick={() => setView('outfit')} className={`flex flex-col items-center gap-1 transition ${view === 'outfit' ? 'text-black' : 'hover:text-gray-600'}`}>
-                            <Sparkles size={20} strokeWidth={1.5} /> OUTFIT
+                        <button onClick={() => setView('search')} className={`flex flex-col items-center gap-1 transition ${view === 'search' ? 'text-black' : 'hover:text-gray-600'}`}>
+                            <Search size={20} strokeWidth={1.5} /> SEARCH
                         </button>
-                        <button onClick={() => setView('organize')} className={`flex flex-col items-center gap-1 transition ${view === 'organize' ? 'text-black' : 'hover:text-gray-600'}`}>
-                            <ListFilter size={20} strokeWidth={1.5} /> ORGANIZE
+                        <button onClick={() => setView('stats')} className={`flex flex-col items-center gap-1 transition ${view === 'stats' ? 'text-black' : 'hover:text-gray-600'}`}>
+                            <BarChart3 size={20} strokeWidth={1.5} /> STATS
                         </button>
                     </div>
                 </>
